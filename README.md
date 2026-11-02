@@ -2,7 +2,7 @@
 
 게임별 한글패치, 버전 정보, 적용 안내와 한국어 오류 제보를 한곳에서 관리합니다.
 
-**[홈페이지](https://bambabo-cmd.github.io/retro-korean-patches/)** · **[패치 목록](https://bambabo-cmd.github.io/retro-korean-patches/#library)** · **[오류 제보](https://github.com/bambabo-cmd/retro-korean-patches/issues/new/choose)**
+**[홈페이지](https://bambabo-cmd.github.io/retro-korean-patches/)** · **[패치 목록](https://bambabo-cmd.github.io/retro-korean-patches/#library)** · **[오류 제보](https://github.com/bambabo-cmd/retro-korean-patches/issues/new/choose)** · **[버전 기록](https://bambabo-cmd.github.io/retro-korean-patches/versions.html)**
 
 ## 등록 프로젝트
 - **NDS 스커지: 하이브** — `WIP011` · [저장소](https://github.com/bambabo-cmd/NDS-ScurgeHive)
@@ -25,14 +25,14 @@
 ## 오류 제보
 `.github/ISSUE_TEMPLATE/`에 한국어 양식(실행 오류, 번역/폰트, 개선 제안)이 있습니다. GitHub 계정 인증은 실명 확인을 뜻하지 않습니다.
 
-## 다운로드 관련
-현재 공개 저장소에 올린 기존 패치는 로그인 없이 접근할 수 있습니다. **인증 사용자만 받는 새 패치 배포**는 공개 GitHub Releases에 파일을 올리지 않고 별도 비공개 파일 저장소 및 GitHub OAuth를 구축해야 합니다. 이 홈페이지 자체만으로 기존 공개 파일을 제한할 수 없습니다.
+## 배포 안내
+기존 배포 파일은 로그인 없이 내려받을 수 있습니다. 게임별 파일·원본 해시·적용 방법은 각 저장소 README를 기준으로 합니다. 새 GitHub Releases는 별도 버전 기록에 추가합니다.
 
-원본 ROM 및 권리자 허가 없이 배포하면 안 되는 게임 파일은 포함하지 않습니다.
+원본 ROM 및 게임 파일은 제공하지 않습니다.
 
 ## 관리 파일
 - `docs/index.html`: GitHub Pages 홈페이지
-- `docs/patches.json`: 14개 게임의 버전·링크 목록
+- `docs/patches.json`: 14개 게임의 버전·공개 다운로드 링크
 - `.github/ISSUE_TEMPLATE/`: 오류 제보 양식
 - `templates/RELEASE_TEMPLATE_KO.md`: 릴리스 작성 양식
 

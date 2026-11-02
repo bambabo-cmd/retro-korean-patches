@@ -13,7 +13,7 @@
 <header class="header">
  <div class="shell topbar">
   <a class="brand" href="#home"><span class="mark" aria-hidden="true">▦</span><span>RETRO HANGUL<small>PATCH ARCHIVE</small></span></a>
-  <nav class="nav"><a href="#library">패치 목록</a><a href="#access">다운로드</a><a href="#guide">적용 안내</a><a href="#reports">오류 제보</a></nav>
+  <nav class="nav"><a href="#library">패치 목록</a><a href="#access">다운로드</a><a href="versions.html">버전 기록</a><a href="#guide">적용 안내</a><a href="#reports">오류 제보</a></nav>
   <a class="githublink" href="https://github.com/bambabo-cmd" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
  </div>
 </header>
@@ -32,17 +32,16 @@
   <div class="introfoot"><span>게임별 원본 ROM 조건을 확인하세요.</span><span>PATCH / ISSUE / RELEASE</span></div>
  </section>
  <section class="library shell" id="library">
-  <div class="sectionhead"><div><div class="sectionnum">01 / LIBRARY</div><h2>패치 목록</h2><p>저장소 README에 기록된 버전 기준입니다. 정식 GitHub Releases는 아직 별도 등록되지 않았습니다.</p></div><div class="count"><span id="result-count">14</span> PROJECTS</div></div>
+  <div class="sectionhead"><div><div class="sectionnum">01 / LIBRARY</div><h2>패치 목록</h2><p>각 저장소에서 확인된 공개 패치 기준입니다. 이전 배포 기록은 버전 기록을 참고하세요.</p></div><div class="count"><span id="result-count">14</span> PROJECTS</div></div>
   <div class="toolbar"><div id="filters" class="filters" aria-label="기종 필터"><button class="active" data-filter="전체" aria-pressed="true">전체</button><button data-filter="SFC">SFC</button><button data-filter="NDS">NDS</button><button data-filter="GBA">GBA</button><button data-filter="GBC">GBC</button><button data-filter="GB">GB</button></div><label class="search"><span>⌕</span><input id="search" type="search" placeholder="게임명 검색" aria-label="게임명 검색"></label></div>
   <div class="cards" id="patch-grid"><p class="muted">패치 목록을 불러오고 있습니다.</p></div><p id="empty-state" class="empty" hidden>검색 결과가 없습니다.</p>
  </section>
- <section class="guide shell" id="access"><div class="sectionhead"><div><div class="sectionnum">02 / ACCESS</div><h2>다운로드</h2></div></div>
-  <div class="noticegrid"><div class="notice"><span class="noticeid">PUBLIC</span><h3>기존 공개 배포</h3><p>게임별 GitHub 저장소에서 파일과 적용 조건을 확인할 수 있습니다. 공개된 파일은 로그인 없이 접근할 수 있습니다.</p></div>
-  <div class="notice"><span class="noticeid">VERIFIED</span><h3>인증 다운로드</h3><p>향후 새 배포부터 GitHub 계정 인증과 비공개 저장 공간을 이용한 다운로드를 지원할 수 있습니다. 현재 인증 서버는 설치 전입니다.</p></div></div>
- </section>
+ <section class="guide shell" id="access"><div class="sectionhead"><div><div class="sectionnum">02 / DOWNLOAD</div><h2>공개 다운로드</h2><p>패치 파일만 배포하며 원본 ROM은 포함되지 않습니다.</p></div></div>
+<div class="noticegrid"><div class="notice"><span class="noticeid">PATCH</span><h3>공개 패치</h3><p>게임 카드에서 xdelta 또는 IPS 패치를 내려받을 수 있습니다. 적용 전 원본 판본과 체크섬을 확인하세요.</p></div>
+<div class="notice"><span class="noticeid">VERSIONS</span><h3>버전 기록</h3><p>기존 README 기록과 정식 GitHub Releases를 구분합니다.</p><p><a class="textbtn" href="versions.html">버전 기록 보기 ↗</a></p></div></div></section>
  <section class="guide shell" id="guide"><div class="sectionhead"><div><div class="sectionnum">03 / GUIDE</div><h2>적용 안내</h2></div></div>
  <div class="steps"><div><span>01</span><h3>지원 원본 확인</h3><p>각 저장소 README의 판본·CRC32·MD5를 확인합니다.</p></div><div><span>02</span><h3>패치 적용</h3><p>원본 ROM에 xdelta 또는 안내된 패치 형식을 적용합니다.</p></div><div><span>03</span><h3>결과 확인</h3><p>출력 ROM의 체크섬과 저장 호환성 주의사항을 확인합니다.</p></div></div></section>
- <section class="report shell" id="reports"><div class="sectionhead"><div><div class="sectionnum">04 / REPORT</div><h2>오류 제보</h2><p>GitHub 계정으로 로그인한 뒤 한국어 양식에서 게임·버전·에뮬레이터·증상을 작성합니다. ROM 원본은 첨부하지 마세요.</p></div></div><a class="solidbtn" href="https://github.com/bambabo-cmd/retro-korean-patches/issues/new/choose" target="_blank" rel="noopener noreferrer">오류 제보하기 ↗</a></section>
+ <section class="report shell" id="reports"><div class="sectionhead"><div><div class="sectionnum">04 / REPORT</div><h2>오류 제보</h2><p>GitHub 계정으로 로그인한 뒤 한국어 양식에서 게임·버전·에뮬레이터·증상을 작성합니다. ROM 원본은 첨부하지 마세요.</p></div></div><a class="solidbtn" href="https://github.com/bambabo-cmd/retro-korean-patches/issues/new/choose" target="_blank" rel="noopener noreferrer">오류 제보하기 ↗</a> <a class="textbtn" href="https://github.com/bambabo-cmd/retro-korean-patches/issues?q=is%3Aissue" target="_blank" rel="noopener noreferrer">접수 현황 ↗</a></section>
 </main>
 <footer><div class="shell foot"><span>RETRO HANGUL <b>/</b> PATCH ARCHIVE</span><span>비공식 팬 번역 프로젝트 · 게임 ROM 미배포</span><a href="#home">TOP ↑</a></div></footer>
 </body></html>
