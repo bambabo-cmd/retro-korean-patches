@@ -55,6 +55,6 @@ Promise.all([
   root.replaceChildren(fragment);
  }
  if(!online){const note=el('p','history-api-note','GitHub Releases 실시간 조회가 제한되어 README와 저장된 기록만 표시합니다.');root.before(note)}
- select.addEventListener('change',()=>{const u=new URL(location.href);if(select.value)u.searchParams.set('game',select.value);else u.searchParams.delete('game');history.replaceState(null,'',u);render()});
+ select.addEventListener('change',()=>{const u=new URL(location.href);if(select.value)u.searchParams.set('game',select.value);else u.searchParams.delete('game');window.history.replaceState(null,'',u);render()});
  render();
 }).catch(()=>{root.textContent='버전 기록을 읽지 못했습니다. 다시 접속해 주세요.'});
