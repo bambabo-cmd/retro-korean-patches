@@ -1,0 +1,36 @@
+name: '개선 제안'
+description: '패치 사용성에 대한 의견을 제안합니다.'
+title: '[제안] 게임명 - 증상 요약'
+body:
+  - type: markdown
+    attributes:
+      value: 'ROM 파일이나 개인 정보를 첨부하지 마세요. GitHub 이메일 확인 계정이 필요합니다.'
+  - type: dropdown
+    id: game
+    attributes:
+      label: 게임명
+      options:
+        - 'NDS - 스커지: 하이브'
+        - 'GBC - 에스트폴리스 전기: 되살아나는 전설'
+        - 'GBC - 포욘의 던전룸 2'
+        - 'GB - 천지를 먹다'
+        - 'SFC - 카오스 시드: 풍수회랑기'
+        - 'SFC - 에스트폴리스 전기 II'
+        - 'NDS - 프론트 미션 1st'
+        - 'SFC - 실바 사가 II'
+        - 'GBA - 에스트폴리스 외전: 침묵의 유적'
+        - 'SFC - 미스틱 아크'
+        - 'SFC - 초마법대륙 WOZZ'
+        - 'SFC - 대괴수 이야기 II'
+        - 'NDS - 세븐스 드래곤'
+        - 'GBC - 스타오션: 블루스피어'
+        - '기타 (게임명을 본문에 입력)'
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 제안 내용
+      description: '기존 동작과 변경을 제안하는 이유를 작성해주세요.'
+    validations:
+      required: true

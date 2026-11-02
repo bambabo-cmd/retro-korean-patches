@@ -1,0 +1,53 @@
+name: '번역·글꼴 오류'
+description: '미번역과 글꼴 문제를 제보합니다.'
+title: '[번역] 게임명 - 증상 요약'
+body:
+  - type: markdown
+    attributes:
+      value: 'ROM 파일이나 개인 정보를 첨부하지 마세요. GitHub 이메일 확인 계정이 필요합니다.'
+  - type: dropdown
+    id: game
+    attributes:
+      label: 게임명
+      options:
+        - 'NDS - 스커지: 하이브'
+        - 'GBC - 에스트폴리스 전기: 되살아나는 전설'
+        - 'GBC - 포욘의 던전룸 2'
+        - 'GB - 천지를 먹다'
+        - 'SFC - 카오스 시드: 풍수회랑기'
+        - 'SFC - 에스트폴리스 전기 II'
+        - 'NDS - 프론트 미션 1st'
+        - 'SFC - 실바 사가 II'
+        - 'GBA - 에스트폴리스 외전: 침묵의 유적'
+        - 'SFC - 미스틱 아크'
+        - 'SFC - 초마법대륙 WOZZ'
+        - 'SFC - 대괴수 이야기 II'
+        - 'NDS - 세븐스 드래곤'
+        - 'GBC - 스타오션: 블루스피어'
+        - '기타 (게임명을 본문에 입력)'
+    validations:
+      required: true
+  - type: input
+    id: patch_version
+    attributes:
+      label: 패치 버전
+      placeholder: '예: v0.9.9A / WIP271'
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: 에뮬레이터 또는 실기 / 운영체제
+      placeholder: '예: iOS Manic Emu'
+  - type: textarea
+    id: detail
+    attributes:
+      label: 문제 설명과 재현 방법
+      description: '발생 장소, 조작 순서, 예상한 동작, 실제 동작을 적어주세요.'
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: 스크린샷·추가 정보
+      description: '스크린샷은 가능하지만 ROM 및 개인정보는 올리지 마세요.'
