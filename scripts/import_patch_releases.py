@@ -63,7 +63,10 @@ def validate_patch(name: str, payload: bytes) -> None:
 
 
 def gh(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(["gh", *args], text=True, capture_output=True, check=check)
+    result = subprocess.run(["gh", *args], text=True, capture_output=True)
+    if check and result.returncode:
+        raise RuntimeError(f"gh error ({result.returncode}): {result.stderr.strip()[:1200]}")
+    return result
 
 
 def main() -> None:
@@ -94,7 +97,9 @@ def main() -> None:
                     used.add(name)
                     payload = fetch_bytes(url)
                     validate_patch(name, payload)
-                    path = base / name
+                    # GitHub CLI treats [ and ] in filenames as glob patterns.
+                    safe_name = re.sub(r"[\\[\\]*?]", "_", name)
+                    path = base / safe_name
                     path.write_bytes(payload)
                     files.append(str(path))
                     sums.append((name, len(payload), hashlib.sha256(payload).hexdigest()))

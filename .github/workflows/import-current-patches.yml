@@ -25,3 +25,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: python3 scripts/import_patch_releases.py
+
+# Fix: normalize filenames containing GitHub CLI glob characters.
