@@ -1,0 +1,182 @@
+{
+  "NDS-ScurgeHive": [
+    {
+      "version": "WIP011",
+      "date": "2026-09-30",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/NDS-ScurgeHive"
+    },
+    {
+      "version": "v0.9.1 / WIP010",
+      "date": "2026-09-28",
+      "date_basis": "파일명",
+      "source": "file",
+      "status": "이전 개발판 · 호환성 확인 필요",
+      "url": "https://github.com/bambabo-cmd/NDS-ScurgeHive/raw/refs/heads/main/NDS%20Scurge_Hive_KO_v0.9.1_wip010_260928.xdelta"
+    }
+  ],
+  "GBC-EstpolisYomigaeruDensetsu": [
+    {
+      "version": "v0.9 / WIP51",
+      "date": "2026-09-29",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/GBC-EstpolisYomigaeruDensetsu"
+    }
+  ],
+  "GBC-PoyonsDungeonRoom2": [
+    {
+      "version": "r39",
+      "date": "2026-09-29",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/GBC-PoyonsDungeonRoom2"
+    },
+    {
+      "version": "r38",
+      "date": "2026-09-29",
+      "date_basis": "파일명",
+      "source": "file",
+      "status": "이전 개발판 · 호환성 확인 필요",
+      "url": "https://github.com/bambabo-cmd/GBC-PoyonsDungeonRoom2/raw/refs/heads/main/Poyon2_KO_r38_20260929/Poyon2_v04_KO_Galmuri7_r38.ips"
+    },
+    {
+      "version": "r37",
+      "date": "2026-09-29",
+      "date_basis": "파일명",
+      "source": "file",
+      "status": "이전 개발판 · 호환성 확인 필요",
+      "url": "https://github.com/bambabo-cmd/GBC-PoyonsDungeonRoom2/raw/refs/heads/main/Poyon2_KO_r37_20260929/Poyon2_v04_KO_Galmuri7_r37.ips"
+    },
+    {
+      "version": "r36",
+      "date": "2026-09-29",
+      "date_basis": "파일명",
+      "source": "file",
+      "status": "이전 개발판 · 호환성 확인 필요",
+      "url": "https://github.com/bambabo-cmd/GBC-PoyonsDungeonRoom2/raw/refs/heads/main/Poyon2_KO_r36_20260929/Poyon2_v04_KO_Galmuri7_r36.ips"
+    },
+    {
+      "version": "r35",
+      "date": "2026-09-29",
+      "date_basis": "파일명",
+      "source": "file",
+      "status": "이전 개발판 · 호환성 확인 필요",
+      "url": "https://github.com/bambabo-cmd/GBC-PoyonsDungeonRoom2/raw/refs/heads/main/Poyon2_KO_r35_20260929/Poyon2_v04_KO_Galmuri7_r35.ips"
+    }
+  ],
+  "GB-TenchiWoKurau": [
+    {
+      "version": "v0.9.4",
+      "date": "2026-09-27",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/GB-TenchiWoKurau"
+    }
+  ],
+  "SFC-ChaosSeed": [
+    {
+      "version": "v0.7 / WIP68",
+      "date": "2026-09-27",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/SFC-ChaosSeed"
+    }
+  ],
+  "SFC-EstpolisDenki2": [
+    {
+      "version": "v0.9.8 / WIP206",
+      "date": "2026-09-27",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/SFC-EstpolisDenki2"
+    }
+  ],
+  "NDS-FrontMission1st": [
+    {
+      "version": "v0.8.5 / WIP013",
+      "date": "2026-09-26",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/NDS-FrontMission1st"
+    }
+  ],
+  "SFC-SilvaSaga2": [
+    {
+      "version": "WIP348",
+      "date": "2026-09-23",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/SFC-SilvaSaga2"
+    }
+  ],
+  "GBA-EstpolisGaiden": [
+    {
+      "version": "v0.9 / WIP0129",
+      "date": "2026-09-22",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/GBA-EstpolisGaiden"
+    }
+  ],
+  "SFC-MysticArk": [
+    {
+      "version": "v1.1.12-19r19",
+      "date": "2026-09-20",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/SFC-MysticArk"
+    }
+  ],
+  "SFC-ChouMahouTairikuWOZZ": [
+    {
+      "version": "WIP135",
+      "date": "2026-09-15",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/SFC-ChouMahouTairikuWOZZ"
+    }
+  ],
+  "SFC-DaikaijuuMonogatari2": [
+    {
+      "version": "v0.9.8 / WIP121",
+      "date": "2026-09-08",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "개발 검수판",
+      "url": "https://github.com/bambabo-cmd/SFC-DaikaijuuMonogatari2"
+    }
+  ],
+  "NDS-7thDragon": [
+    {
+      "version": "v0.9.9A / WIP271",
+      "date": "2026-08-29",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/NDS-7thDragon"
+    }
+  ],
+  "GBC-StarOceanBlueSphere": [
+    {
+      "version": "v0.9.5 / WIP172",
+      "date": "2026-08-21",
+      "date_basis": "README 작업 기록",
+      "source": "readme",
+      "status": "테스트 배포",
+      "url": "https://github.com/bambabo-cmd/GBC-StarOceanBlueSphere"
+    }
+  ]
+}

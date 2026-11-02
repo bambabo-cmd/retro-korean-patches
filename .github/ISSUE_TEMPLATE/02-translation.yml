@@ -1,10 +1,11 @@
-name: '번역·글꼴 오류'
-description: '미번역과 글꼴 문제를 제보합니다.'
-title: '[번역] 게임명 - 증상 요약'
+name: '번역·글꼴·표시 오류'
+description: '일본어 잔존, 오역, 폰트·띄어쓰기·줄바꿈 문제'
+title: '[번역] 게임명 - 증상'
+labels: ['bug']
 body:
   - type: markdown
     attributes:
-      value: 'ROM 파일이나 개인 정보를 첨부하지 마세요. GitHub 이메일 확인 계정이 필요합니다.'
+      value: '화면 위치나 장면, 문제가 보이는 문구를 가능한 한 구체적으로 적어주세요.'
   - type: dropdown
     id: game
     attributes:
@@ -35,19 +36,37 @@ body:
     validations:
       required: true
   - type: input
-    id: environment
+    id: emulator
     attributes:
-      label: 에뮬레이터 또는 실기 / 운영체제
-      placeholder: '예: iOS Manic Emu'
-  - type: textarea
-    id: detail
+      label: 기기 및 에뮬레이터
+      placeholder: '예: iPhone / iOS / Manic Emu, 또는 SFC 실기'
+    validations:
+      required: true
+  - type: dropdown
+    id: category
     attributes:
-      label: 문제 설명과 재현 방법
-      description: '발생 장소, 조작 순서, 예상한 동작, 실제 동작을 적어주세요.'
+      label: 문제 종류
+      options:
+        - '미번역·일본어 잔존'
+        - '오역·문장 표현'
+        - '한글 글리프·숫자·특수문자'
+        - '글자 겹침·잘림·줄바꿈'
+        - '창·커서 등 표시'
     validations:
       required: true
   - type: textarea
-    id: attachments
+    id: scene
+    attributes:
+      label: 발생 장면과 현재 표시
+      placeholder: '어느 화면에 어떤 글자가 나타나는지 적어주세요.'
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: 제안하는 수정 내용 (선택)
+  - type: textarea
+    id: screenshot
     attributes:
       label: 스크린샷·추가 정보
-      description: '스크린샷은 가능하지만 ROM 및 개인정보는 올리지 마세요.'
+      description: '가능하면 문제가 보이는 화면을 첨부해 주세요. ROM 파일은 첨부하지 마세요.'

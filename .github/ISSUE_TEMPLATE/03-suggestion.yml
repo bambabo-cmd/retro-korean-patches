@@ -1,10 +1,8 @@
 name: '개선 제안'
-description: '패치 사용성에 대한 의견을 제안합니다.'
-title: '[제안] 게임명 - 증상 요약'
+description: '편의 기능과 사용성 관련 제안'
+title: '[제안] 게임명 - 내용'
+labels: ['enhancement']
 body:
-  - type: markdown
-    attributes:
-      value: 'ROM 파일이나 개인 정보를 첨부하지 마세요. GitHub 이메일 확인 계정이 필요합니다.'
   - type: dropdown
     id: game
     attributes:
@@ -30,7 +28,11 @@ body:
   - type: textarea
     id: suggestion
     attributes:
-      label: 제안 내용
-      description: '기존 동작과 변경을 제안하는 이유를 작성해주세요.'
+      label: 원하는 변경 사항
+      description: '어떤 동작이 어떻게 바뀌면 좋은지 적어주세요.'
     validations:
       required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: 현재 문제점과 기대 효과
