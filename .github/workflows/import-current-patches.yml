@@ -1,0 +1,27 @@
+name: 공개 패치 버전 아카이브
+
+on:
+  push:
+    paths:
+      - '.github/workflows/import-current-patches.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archive-releases
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 저장소 가져오기
+        uses: actions/checkout@v4
+      - name: 기존 공개 패치 버전별 등록
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: python3 scripts/import_patch_releases.py

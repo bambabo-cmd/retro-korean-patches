@@ -37,3 +37,7 @@
 - `templates/RELEASE_TEMPLATE_KO.md`: 릴리스 작성 양식
 
 **배포 설정:** Settings → Pages → Deploy from a branch → main /docs → Save
+
+## 릴리스 관리
+- [현재 버전의 GitHub Releases](https://github.com/bambabo-cmd/retro-korean-patches/releases)
+- [버전별 배포 운영 방법](RELEASE_MANAGEMENT.md)
