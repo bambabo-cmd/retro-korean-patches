@@ -1,0 +1,22 @@
+{
+  "game": "",
+  "platform": "",
+  "source_rom": {
+    "region": "",
+    "size_bytes": null,
+    "crc32": "",
+    "md5": "",
+    "sha256": ""
+  },
+  "release": {
+    "version": "",
+    "patch_file": "",
+    "patch_sha256": "",
+    "result_rom_crc32": "",
+    "result_rom_md5": "",
+    "result_rom_sha256": ""
+  },
+  "tested_on": [],
+  "known_issues": [],
+  "save_compatibility": ""
+}
