@@ -27,7 +27,7 @@ Promise.all([
    title.append(el('h2','',p.title),el('span','',p.platform));
    card.append(title);
    const all=[...(history[slug]||[])];
-   for(const r of releases){
+   for(const r of releases.slice().reverse()){
     if(typeof r.tag_name!=='string'||!r.tag_name.startsWith('archive/'+slug+'/')||r.draft)continue;
     all.unshift({source:'release',version:r.tag_name.split('/').slice(2).join('/'),date:(r.published_at||'').slice(0,10),status:r.prerelease?'시험판':'정식 릴리스',url:r.html_url});
    }
