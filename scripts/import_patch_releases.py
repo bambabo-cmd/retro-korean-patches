@@ -98,7 +98,7 @@ def main() -> None:
                     payload = fetch_bytes(url)
                     validate_patch(name, payload)
                     # GitHub CLI treats [ and ] in filenames as glob patterns.
-                    safe_name = re.sub(r"[\\[\\]*?]", "_", name)
+                    safe_name = name.replace("[", "_").replace("]", "_").replace("*", "_").replace("?", "_")
                     path = base / safe_name
                     path.write_bytes(payload)
                     files.append(str(path))
