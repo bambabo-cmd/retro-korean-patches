@@ -1,0 +1,45 @@
+name: Gens KO Windows 실행판 릴리즈
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gens-ko-windows-release.yml'
+      - '.github/scripts/publish_gens_windows.py'
+      - 'release-payloads/gens-ko/20261121_01/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gens-ko-windows-release-20261121-01
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 실행판·소스 무결성 확인 및 릴리즈 게시
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          python3 .github/scripts/publish_gens_windows.py \
+            --manifest release-payloads/gens-ko/20261121_01/manifest.json \
+            --output "$RUNNER_TEMP/gens-ko-windows-release" \
+            --repository "$GITHUB_REPOSITORY" \
+            --commit "$GITHUB_SHA" \
+            --publish
+      - name: 게시 후 다운로드 검증 기록
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gens-ko-windows-release-verification
+          path: ${{ runner.temp }}/gens-ko-windows-release/release_verification.json
+          if-no-files-found: warn
+          retention-days: 30
