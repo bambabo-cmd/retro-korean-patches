@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "name": "20261121-save-protection",
+  "baseline_package": "Gens_KO_2.14_r3_TEST_20261120_03_source.zip",
+  "target": "src/common/src/save.cpp",
+  "before_sha256": "73bb7f4d9b6c396fb2cb889ce3a1ba9859f8a10591f65581a0d7f00b838a454e",
+  "after_sha256": "ebb696fb80583d47001e5c1c87a330d4756d762c4898bc78c4c24ed3f5de9b42",
+  "regression_checks": 63,
+  "regression_scope": "Exact production functions with native stdio-backed Windows API doubles; no Windows GUI or user-save recovery claim.",
+  "apply_helper_validation": {
+    "status": "PASS",
+    "checks": [
+      "check_mode_preserves_original",
+      "pinned_patch_produces_exact_current_source",
+      "repeat_application_is_noop",
+      "different_source_rejected_without_write",
+      "outside_symlink_target_rejected",
+      "changed_patch_rejected_without_write",
+      "standard_git_apply_produces_exact_current_source",
+      "regression_script_byte_exact",
+      "regression_report_byte_exact"
+    ]
+  },
+  "contains_game_roms": false,
+  "contains_game_saves": false,
+  "contains_runtime_captures": false,
+  "contains_full_original_core": false,
+  "files": {
+    "README_KO.md": {
+      "bytes": 5774,
+      "sha256": "498b9c066e6d76a0deef330cd7ad7d51a34d4b451ae3c1a30f1fed9ea3b51303"
+    },
+    "apply_hotfix.py": {
+      "bytes": 3790,
+      "sha256": "7adb8fb8eecbc0f44efc310972f68577da3c53b18d19d650d189eb25390d6742"
+    },
+    "save-protection.patch": {
+      "bytes": 3429,
+      "sha256": "d93a4f4b603efbfcf64f274930affd334f9a3d1632d31c0bfc3d33ad85c28c2f"
+    },
+    "sram_io_report.json": {
+      "bytes": 786,
+      "sha256": "6e8860d1026706aaeed7b8afb98655eceb6d463a90609ca109c028e91a3a0373"
+    },
+    "sram_io_test.log": {
+      "bytes": 47,
+      "sha256": "cfa3b890c6fb3e879b4f2fa8a1d6f8f4df3bc8682b1468176fb4d79c098441b6"
+    },
+    "test_sram_io.py": {
+      "bytes": 12798,
+      "sha256": "a0f21ca347a3d9bb8326eb196918e16380913e8a95d3353de64d4690a59f0f80"
+    }
+  }
+}

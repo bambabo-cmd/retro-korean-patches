@@ -1,0 +1,86 @@
+diff --git a/src/common/src/save.cpp b/src/common/src/save.cpp
+--- a/src/common/src/save.cpp
++++ b/src/common/src/save.cpp
+@@ -2431,8 +2431,22 @@
+ }
+ 
+ 
+-/* Gens KO 2026-11-20: checked I/O and replace-after-success prevent a
+- * failed write from truncating an existing save. */
++/* Gens KO 2026-11-21: checked reads and replace-after-success writes protect
++ * existing saves. A failed load blocks writes for this ROM session so a
++ * blank/newly initialized SRAM buffer cannot replace the unread file. */
++static int SRAM_Write_Blocked = 0;
++
++static int SRAM_Load_Error(void)
++{
++    SRAM_Write_Blocked = 1;
++    MessageBoxW(HWnd,
++        L"게임 저장 파일을 완전히 읽지 못했습니다.\n"
++        L"기존 파일을 보호하기 위해 이 ROM의 저장 파일 덮어쓰기를 중지했습니다.\n\n"
++        L"저장 폴더와 파일 권한을 확인한 뒤 ROM을 다시 열어 주세요.",
++        L"Gens KO - 저장 파일 읽기 오류", MB_OK | MB_ICONERROR);
++    return 0;
++}
++
+ static int Atomic_Save_Bytes(const char *name, const unsigned char *data, unsigned long length)
+ {
+     char temporary[2200];
+@@ -2462,18 +2476,30 @@
+ int Load_SRAM(void)
+ {
+     char name[2048];
+-    SetCurrentDirectory(Gens_Path);
++    SRAM_Write_Blocked = 1;
+     memset(SRAM, Cart_IsPier() ? 0xff : 0, 65536);
+     Cart_SetNvStatus(0);
+-    if (!SRAM_Name(name, sizeof(name))) return 0;
++    if (!SetCurrentDirectory(Gens_Path) || !SRAM_Name(name, sizeof(name))) return SRAM_Load_Error();
+     HANDLE file = CreateFile(name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+-    if (file == INVALID_HANDLE_VALUE) return 0;
++    if (file == INVALID_HANDLE_VALUE) {
++        if (GetLastError() == ERROR_FILE_NOT_FOUND) {
++            SRAM_Write_Blocked = 0; /* A genuinely new save may be created. */
++            return 0;
++        }
++        return SRAM_Load_Error();
++    }
++    BY_HANDLE_FILE_INFORMATION info;
++    if (!GetFileInformationByHandle(file, &info) || info.nFileSizeHigh ||
++        !info.nFileSizeLow || info.nFileSizeLow > 65536) {
++        CloseHandle(file);
++        return SRAM_Load_Error();
++    }
+     unsigned char memory[65536];
+     memset(memory, Cart_IsPier() ? 0xff : 0, sizeof(memory));
+     unsigned long bytes = 0;
+-    const BOOL ok = ReadFile(file, memory, sizeof(memory), &bytes, NULL);
+-    CloseHandle(file);
+-    if (!ok || !bytes) return 0;
++    const BOOL ok = ReadFile(file, memory, info.nFileSizeLow, &bytes, NULL);
++    const BOOL closed = CloseHandle(file);
++    if (!ok || bytes != info.nFileSizeLow || !closed) return SRAM_Load_Error();
+     memcpy(SRAM, memory, sizeof(memory));
+     if (Cart_IsPier()) {
+         /* Keep the 64 KiB raw .srm interoperable; protection status is separate. */
+@@ -2487,6 +2513,7 @@
+             fclose(status);
+         }
+     }
++    SRAM_Write_Blocked = 0;
+     strcpy(Str_Tmp, "SRAM loaded from "); strcat(Str_Tmp, name); Put_Info(Str_Tmp, 2000);
+     return 1;
+ }
+@@ -2494,7 +2521,11 @@
+ int Save_SRAM(void)
+ {
+     char name[2048];
+-    SetCurrentDirectory(Gens_Path);
++    if (SRAM_Write_Blocked) {
++        Put_Info("저장 파일 읽기 오류: 기존 파일을 보호하여 덮어쓰지 않았습니다", 4000);
++        return 0;
++    }
++    if (!SetCurrentDirectory(Gens_Path)) return 0;
+     if (!SRAM_Name(name, sizeof(name))) return 0;
+     unsigned int size = 65536;
+     if (!Cart_IsPier()) {

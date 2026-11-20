@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "recorded_utc": "2026-11-20T15:11:03.486488+00:00",
+  "status": "PASS",
+  "checks": 63,
+  "source_sha256": "ebb696fb80583d47001e5c1c87a330d4756d762c4898bc78c4c24ed3f5de9b42",
+  "sources": {
+    "src/common/src/save.cpp": "ebb696fb80583d47001e5c1c87a330d4756d762c4898bc78c4c24ed3f5de9b42",
+    "tests/test_sram_io.py": "a0f21ca347a3d9bb8326eb196918e16380913e8a95d3353de64d4690a59f0f80"
+  },
+  "reproduce_command": "python3 tests/test_sram_io.py",
+  "scope": "Exact production SRAM functions, native stdio-backed Windows file API doubles, injected I/O failures. No real Windows filesystem/GUI or game-save recovery claim.",
+  "sanitizers": [
+    "address",
+    "undefined"
+  ],
+  "game_rom_required": false,
+  "existing_user_files_modified": false,
+  "returncode": 0
+}
