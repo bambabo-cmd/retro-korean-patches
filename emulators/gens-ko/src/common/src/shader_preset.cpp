@@ -8,9 +8,11 @@
 #include <cctype>
 #include <cmath>
 #include <limits>
+#include <set>
 
 KoShaderPass::KoShaderPass() : wrap("clamp_to_border"), scale_type_x("source"),
- scale_type_y("source"), scale_x(1.0), scale_y(1.0), linear(false), frame_mod(0) {}
+ scale_type_y("source"), scale_x(1.0), scale_y(1.0), linear(false),
+ float_framebuffer(false), frame_mod(0) {}
 
 static std::string trim(const std::string &s) {
     std::string::size_type a=s.find_first_not_of(" \t\r\n"), b=s.find_last_not_of(" \t\r\n");
@@ -18,7 +20,7 @@ static std::string trim(const std::string &s) {
 }
 static bool number(const std::string &s, double &v) {
     errno=0; char *end=0; v=strtod(s.c_str(), &end);
-    return !s.empty() && end && *end==0 && !errno && v==v &&
+    return !s.empty() && end==s.c_str()+s.size() && !errno && v==v &&
            v<=std::numeric_limits<double>::max() && v>=-std::numeric_limits<double>::max();
 }
 static bool boolean(const std::string &s, bool &v) {
@@ -27,10 +29,83 @@ static bool boolean(const std::string &s, bool &v) {
 }
 static std::string idx(unsigned int n) {std::ostringstream ss;ss<<n;return ss.str();}
 
+static bool identifier(const std::string &name) {
+    if(name.empty() || name.size()>128) return false;
+    for(size_t i=0;i<name.size();++i) {
+        unsigned char c=(unsigned char)name[i];
+        bool letter=(c>='A'&&c<='Z')||(c>='a'&&c<='z')||c=='_';
+        if(!letter && !(i && c>='0'&&c<='9')) return false;
+    }
+    return name.compare(0,3,"gl_")!=0 && name.find("__")==std::string::npos;
+}
+static bool numberedName(const std::string &name,const char *base) {
+    std::string prefix(base);
+    if(name.compare(0,prefix.size(),prefix)!=0) return false;
+    for(size_t i=prefix.size();i<name.size();++i) if(name[i]<'0'||name[i]>'9') return false;
+    return true; /* The bare prefix is reserved as well. */
+}
+static bool reservedAlias(const std::string &name) {
+    const char *reserved[]={"Orig","Original","Source","Texture","Input","Output",
+        "Feedback","KoOriginal","KoOutput"};
+    for(size_t i=0;i<sizeof(reserved)/sizeof(reserved[0]);++i) if(name==reserved[i]) return true;
+    return numberedName(name,"Pass") || numberedName(name,"PassPrev") ||
+           name.compare(0,4,"Prev")==0 || numberedName(name,"Feedback");
+}
+/* These options take a canonical zero-based suffix. Silently ignoring, for
+ * example, float_framebuffer16 or shader-1 would change the requested graph. */
+static const char *passProperties[]={
+    "float_framebuffer","srgb_framebuffer","frame_count_mod","filter_linear",
+    "mipmap_input","scale_type_x","scale_type_y","scale_type","scale_x","scale_y",
+    "wrap_mode","shader","alias","scale"
+};
+static bool validatePassKey(const std::string &key,unsigned int count,std::string &error) {
+    if(key=="shaders") return true;
+    for(size_t i=0;i<sizeof(passProperties)/sizeof(passProperties[0]);++i) {
+        std::string prefix(passProperties[i]);
+        if(key.compare(0,prefix.size(),prefix)!=0) continue;
+        std::string suffix=key.substr(prefix.size());unsigned int pass=0;
+        if(suffix.empty() || (suffix.size()>1 && suffix[0]=='0')) {
+            error="Invalid pass index in preset key: "+key;return false;
+        }
+        for(size_t j=0;j<suffix.size();++j) {
+            if(suffix[j]<'0'||suffix[j]>'9') {error="Invalid pass index in preset key: "+key;return false;}
+            pass=pass*10+(unsigned int)(suffix[j]-'0');
+            if(pass>=count) {error="Preset key refers to a nonexistent pass: "+key;return false;}
+        }
+        return true;
+    }
+    return true;
+}
+static bool reservedParameter(const std::string &name) {
+    const char *reserved[]={"shaders","parameters","textures","feedback_pass",
+        "Texture","Source","InputSize","TextureSize","OutputSize","MVPMatrix",
+        "FrameCount","FrameDirection","SourceSize","KoOriginalSize","KoOutputSize"};
+    for(size_t i=0;i<sizeof(reserved)/sizeof(reserved[0]);++i) if(name==reserved[i]) return true;
+    for(size_t i=0;i<sizeof(passProperties)/sizeof(passProperties[0]);++i)
+        if(name.compare(0,std::string(passProperties[i]).size(),passProperties[i])==0) return true;
+    return false;
+}
+static bool generatedUniform(const std::string &name,const std::string &prefix) {
+    const char *suffixes[]={"Texture","InputSize","TextureSize","Size","TexCoord"};
+    for(size_t i=0;i<sizeof(suffixes)/sizeof(suffixes[0]);++i) if(name==prefix+suffixes[i]) return true;
+    return false;
+}
+static bool parameterConflictsWithInput(const std::string &name,const std::set<std::string> &aliases) {
+    const char *prefixes[]={"Orig","Original","Source","Feedback","Prev"};
+    for(size_t i=0;i<sizeof(prefixes)/sizeof(prefixes[0]);++i) if(generatedUniform(name,prefixes[i])) return true;
+    for(unsigned int i=0;i<=KO_SHADER_MAX_PASSES;++i)
+        if(generatedUniform(name,"Pass"+idx(i)) || generatedUniform(name,"PassPrev"+idx(i)) ||
+           generatedUniform(name,"Prev"+idx(i))) return true;
+    for(std::set<std::string>::const_iterator it=aliases.begin();it!=aliases.end();++it)
+        if(generatedUniform(name,*it)) return true;
+    return false;
+}
+
 bool KoParseShaderPreset(const std::string &source, KoShaderPreset &out, std::string &error) {
     std::string text=source;
     if(text.compare(0,3,"\xef\xbb\xbf")==0) text.erase(0,3);
     if(text.size()>1024*1024) {error="Preset exceeds the 1 MiB limit.";return false;}
+    if(text.find('\0')!=std::string::npos) {error="Preset contains an embedded NUL byte.";return false;}
     std::map<std::string,std::string> kv;
     std::istringstream lines(text); std::string line;
     while(std::getline(lines,line)) {
@@ -56,24 +131,35 @@ bool KoParseShaderPreset(const std::string &source, KoShaderPreset &out, std::st
         kv[key]=value;
     }
     double count=0;
-    if(!number(kv["shaders"],count)||count<1||count>8||floor(count)!=count) {
-        error="This renderer supports 1 to 8 GLSL passes.";return false;
+    if(!number(kv["shaders"],count)||count<1||count>KO_SHADER_MAX_PASSES||floor(count)!=count) {
+        error="This renderer supports 1 to 16 GLSL passes.";return false;
     }
     if(!kv["textures"].empty()) {error="Lookup textures (LUT) are not supported in this build.";return false;}
-    if(kv.count("feedback_pass")) {error="Feedback framebuffers are not supported in this build.";return false;}
     KoShaderPreset candidate;
+    if(kv.count("feedback_pass")) {
+        double feedback=0;
+        if(!number(kv["feedback_pass"],feedback)||feedback<0||feedback>=count||floor(feedback)!=feedback) {
+            error="feedback_pass must select a zero-based pass from 0 to shaders-1.";return false;
+        }
+        candidate.feedback_pass=(int)feedback;
+    }
+    for(std::map<std::string,std::string>::const_iterator it=kv.begin();it!=kv.end();++it)
+        if(!validatePassKey(it->first,(unsigned int)count,error)) return false;
+    std::set<std::string> aliases;
     for(unsigned int i=0;i<(unsigned int)count;++i) {
         KoShaderPass p; std::string n=idx(i);
         if(!kv.count("shader"+n)||kv["shader"+n].empty()) {error="Missing shader"+n;return false;}
         p.file=kv["shader"+n]; p.alias=kv["alias"+n];
         if(!p.alias.empty()) {
-            for(size_t j=0;j<p.alias.size();++j) if(!(isalnum((unsigned char)p.alias[j])||p.alias[j]=='_')) {
-                error="Shader alias must be a GLSL identifier.";return false;
-            }
-            if(isdigit((unsigned char)p.alias[0])) {error="Shader alias cannot start with a digit.";return false;}
+            if(!identifier(p.alias)) {error="Shader alias must be a nonreserved ASCII GLSL identifier of at most 128 characters.";return false;}
+            if(reservedAlias(p.alias)) {error="Shader alias conflicts with a renderer input: "+p.alias;return false;}
+            if(!aliases.insert(p.alias).second) {error="Duplicate shader alias: "+p.alias;return false;}
         }
-        const char *unsupported[]={"float_framebuffer","srgb_framebuffer","mipmap_input"};
-        for(unsigned int k=0;k<3;++k) if(kv.count(std::string(unsupported[k])+n)) {
+        if(kv.count("float_framebuffer"+n)&&!boolean(kv["float_framebuffer"+n],p.float_framebuffer)) {
+            error="Invalid float_framebuffer"+n;return false;
+        }
+        const char *unsupported[]={"srgb_framebuffer","mipmap_input"};
+        for(unsigned int k=0;k<2;++k) if(kv.count(std::string(unsupported[k])+n)) {
             bool enabled=false;
             if(!boolean(kv[std::string(unsupported[k])+n],enabled)||enabled) {
                 error=std::string("Unsupported preset option: ")+unsupported[k]+n;return false;
@@ -110,13 +196,19 @@ bool KoParseShaderPreset(const std::string &source, KoShaderPreset &out, std::st
         }
         candidate.passes.push_back(p);
     }
-    std::istringstream plist(kv["parameters"]); std::string param;
+    std::istringstream plist(kv["parameters"]); std::string param;std::set<std::string> listed;
     while(std::getline(plist,param,';')) {
         param=trim(param); if(param.empty())continue;
+        if(!identifier(param)||reservedParameter(param)||parameterConflictsWithInput(param,aliases)) {
+            error="Invalid or reserved shader parameter: "+param;return false;
+        }
+        if(!listed.insert(param).second) {error="Duplicate shader parameter: "+param;return false;}
         if(!kv.count(param))continue;
         double value=0;
         if(!number(kv[param],value)||fabs(value)>1e20) {error="Invalid shader parameter: "+param;return false;}
         candidate.parameters[param]=(float)value;
     }
-    out=candidate;error.clear();return true;
+    /* All validation and allocations finish before committing a new graph. */
+    out.passes.swap(candidate.passes);out.parameters.swap(candidate.parameters);
+    out.feedback_pass=candidate.feedback_pass;error.clear();return true;
 }

@@ -1,4 +1,4 @@
-Gens KO 2.14 R2 신규 기능 모듈·설정 화면 공개 범위
+Gens KO 2.14 R3 신규 기능 모듈·설정 화면 공개 범위
 
 이 공개 묶음은 전체 에뮬레이터가 아닙니다.
 새로 작성한 입력·핫키·배속·되감기·출력 기능 모듈과 설정 UI 확인 도구의 소스,
@@ -14,6 +14,13 @@ Kaillera 구현, Microsoft Wave 샘플, mpglib, 게임 ROM과 외부 BIOS.
 이 묶음의 Gens 입력·프런트엔드와 Gens KO 신규 코드는 해당 GNU GPL 고지를
 유지합니다. CRT-Pi는 원문의 GPL v2 이상 고지와 출처를 유지합니다.
 원본 Gens의 GPL 전문과 사용한 런타임 고지는 licenses 폴더에 보존합니다.
+
+Real CRT Phosphor v1.4.3 Gens용 셰이더 포트는 별도 자산입니다.
+원작자는 건군(gunkun)이며 원문의 비상업 이용 조건을 보존합니다.
+이 폴더의 프로그램 코드 GPL 고지를 해당 셰이더의 재허가로 해석하면 안 됩니다.
+원본·포트 LICENSE.txt와 LICENSE_KR.txt, 출처와 변경 고지를 함께 포함했습니다.
+전용 변환 도구는 신규 GPL 코드이며 원본 Slang 60개 파일과 해시를 보존했습니다.
+Mesa 소프트웨어 OpenGL DLL은 Windows CI 검사 때만 사용하며 배포물에 포함하지 않습니다.
 
 전체 수정본은 별도 문제입니다. 원본 Gens에는 GPL 고지와 함께 Starscream의
 원형 배포·비상업 조건이 남아 있으며, 변경된 코어에 적용되는 재허가나

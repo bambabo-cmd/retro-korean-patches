@@ -31,6 +31,7 @@ production=[
     'src/win32/src/resource.h','src/common/src/ko_manifest.xml',
     'src/common/src/renderer_gl.cpp','src/common/src/renderer_gl.h',
     'src/common/src/shader_preset.cpp','src/common/src/shader_preset.h',
+    'src/common/src/shader_parameters_ui.inc',
 ]
 inputs=[ROOT/name for name in production]+[ROOT/'tests/windows_shader_probe.cpp']
 def read(path):
@@ -85,7 +86,7 @@ report={
     'stubs':['Controller_*_Type/buttons exported storage','Make_IO_Table no-op: game bus is absent'],
     'resource_scope':'Production ko_manifest.xml and RAC accelerator table only; no icons/bitmaps/core assets',
     'excluded':['Starscream main68k/sub68k cores','32X/Genesis/SegaCD cores','Kaillera','Microsoft Wave sample','mpglib','ROM/BIOS','full emulator binary'],
-    'license_scope':'Gens GPL v2 input/frontend source plus Gens KO GPL v2 additions; original LICENSE.txt must accompany source and binary. Packaged CRT-Pi is GPL-2.0-or-later by davej; its header and SOURCE.json are preserved. MinGW runtime notices remain applicable.',
+    'license_scope':'Gens GPL v2 input/frontend source plus Gens KO GPL v2 additions; original LICENSE.txt must accompany source and binary. Packaged CRT-Pi is GPL-2.0-or-later by davej. Real CRT Phosphor v1.4.3 is a separate shader asset under gunkun custom non-commercial terms, with original licenses and SOURCE.json preserved. MinGW runtime notices remain applicable.',
     'compiler':run([compiler,'--version'],'compiler.txt').stdout.splitlines()[0],
     'compile_flags':flags,'imports':imports,
     'exe_sha256':hashlib.sha256(exe.read_bytes()).hexdigest(),'exe_size_bytes':exe.stat().st_size,

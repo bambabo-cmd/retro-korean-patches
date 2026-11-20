@@ -13,3 +13,9 @@ with tempfile.TemporaryDirectory(prefix='gens-public-checks-') as temporary:
                  str(ROOT/'tests'/(name+'.cpp')),'-lz','-o',str(binary)]
         subprocess.run(command,env=environment,check=True)
         subprocess.run([str(binary)],env=environment,check=True)
+    binary=Path(temporary)/'test_shader_preset'
+    subprocess.run(['g++','-std=c++17','-O1','-g','-fsanitize=address,undefined',
+                    '-fno-omit-frame-pointer',str(ROOT/'tests/test_shader_preset.cpp'),
+                    str(ROOT/'src/common/src/shader_preset.cpp'),'-o',str(binary)],env=environment,check=True)
+    subprocess.run([str(binary),*[str(p) for p in sorted((ROOT/'src/shaders').rglob('*.glslp'))]],env=environment,check=True)
+subprocess.run(['python3',str(ROOT/'port_real_crt_phosphor.py'),'--check'],env=environment,check=True)

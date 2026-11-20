@@ -6,11 +6,13 @@ import hashlib, json, zipfile, shutil
 ROOT=Path(__file__).resolve().parent
 OUT=Path.cwd()/'release-assets'
 OUT.mkdir(exist_ok=True)
-TAG='Gens_KO_2.14_R2_modules'
+TAG='Gens_KO_2.14_R3_modules'
 PROOF=Path.cwd()/'settings-proof'
 report=json.loads((PROOF/'windows-smoke.json').read_text(encoding='utf-8-sig'))
 if report.get('status')!='PASS' or report.get('emulator_startup_verified') is not False:
     raise SystemExit('A successful, explicitly scoped settings-component capture is required.')
+if report.get('actual_glsl_pipeline_verified') is not True:
+    raise SystemExit('R3 requires an actual Windows Real CRT pipeline presentation, not only the settings dialog.')
 
 def put_zip(folder,path,prefix,allowed=None):
     with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED,9) as archive:
@@ -29,11 +31,17 @@ for rel,digest in manifest['sha256'].items():
         raise SystemExit('Source changed after review: '+rel)
 allowed=set(manifest['sha256'])|{'PUBLIC_SOURCE_MANIFEST.json'}
 put_zip(ROOT,OUT/(TAG+'_source.zip'),'Gens_KO_modules',allowed)
+put_zip(ROOT/'src/shaders/real-crt-phosphor',OUT/'Real_CRT_Phosphor_1.4.3_Gens_KO_R3.zip','shaders/real-crt-phosphor')
 for item in report['screenshots']:
     source=PROOF/item['file']
     if hashlib.sha256(source.read_bytes()).hexdigest()!=item['sha256']:
         raise SystemExit('Screenshot hash mismatch: '+item['file'])
 put_zip(PROOF,OUT/(TAG+'_settings_screenshots.zip'),'Gens_KO_settings_proof')
+crt_proof=Path.cwd()/'real-crt-proof'
+crt_report=json.loads((crt_proof/'report.json').read_text())
+if crt_report.get('status')!='pass':
+    raise SystemExit('Real CRT port rendering verification did not pass.')
+put_zip(crt_proof,OUT/'Real_CRT_Phosphor_Gens_KO_R3_render_proof.zip','Real_CRT_render_proof')
 shutil.copyfile(ROOT/'FORUM_POST_KO.txt',OUT/(TAG+'_FORUM_POST_KO.txt'))
 shutil.copyfile(ROOT/'PUBLIC_SCOPE_KO.txt',OUT/(TAG+'_PUBLIC_SCOPE_KO.txt'))
 checksum=OUT/(TAG+'_SHA256.txt')

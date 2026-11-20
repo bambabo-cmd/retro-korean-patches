@@ -44,5 +44,5 @@
 
 ## 에뮬레이터 개선 작업
 
-- **[Gens KO 2.14 R2 신규 기능 모듈·설정 화면](emulators/gens-ko/README.md)** — 한글 UI, 키보드·패드 일괄 설정, FF·REW·슬로우모션, 홀드·토글 및 셰이더 개선 작업입니다.
+- **[Gens KO 2.14 R3 신규 기능 모듈·셰이더](emulators/gens-ko/README.md)** — 한글 UI, 키보드·패드 일괄 설정, FF·REW·슬로우모션, 홀드·토글 및 Real CRT Phosphor v1.4.3 셰이더 개선 작업입니다.
 - 공개 범위는 신규 코드와 설정 UI 구성 요소 자료입니다. 원본 Starscream 코어와 전체 에뮬레이터 EXE는 포함하지 않으며, 전체 수정본의 재배포 약관 문제를 해결한 것으로 표시하지 않습니다.

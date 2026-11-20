@@ -5,7 +5,9 @@ Gens 2.14를 바탕으로 작업한 한국어 UI와 신규 기능 모듈의 시�
 
 전체 수정 작업의 주요 변경
 - 한국어 메뉴·설정창, XInput/DirectInput 패드와 일괄 키 설정
-- GLSL/GLSLP 셰이더와 기본 효과
+- Real CRT Phosphor v1.4.3 Gens용 GLSL 포트: 14패스, 실수 버퍼, 잔광
+- 마스크·곡률·잔광·밝기 등 세부 설정과 프리셋별 저장
+- GLSL/GLSLP 최대 16패스와 기본 효과
 - 32MiB ROM·피어솔라 매퍼 대응
 - FF·REW·슬로우모션, 기능별 홀드/토글과 속도 설정
 - 기본 6버튼: ABC=CXZ / XYZ=DSA / START=V / MODE=F
@@ -21,3 +23,9 @@ Gens 2.14를 바탕으로 작업한 한국어 UI와 신규 기능 모듈의 시�
 전체 실행파일은 Starscream과 GPL의 별도 약관 문제를 해결한 것으로 표시하지 않습니다.
 무료 배포와 소스 공개만으로 그 재배포 권한이 확정되는 것은 아닙니다.
 자세한 공개 범위와 원저자·구성요소 고지는 PUBLIC_SCOPE_KO.txt를 확인하세요.
+
+Real CRT Phosphor 원작자: 건군(gunkun).
+https://github.com/crt2oldgamer-stack/real-crt-phosphor/releases/tag/v1.4.3
+원문 비상업 이용 조건·저자 고지를 보존했습니다. 원본 .slangp 직접 로드는 지원하지 않습니다.
+Gens KO R3에서 셰이더 ZIP의 shaders 폴더를 실행파일 옆에 풀고,
+화면 → 셰이더 / 출력 설정 → Real CRT Phosphor · 기본 → 적용을 선택하세요.

@@ -6,6 +6,7 @@
 #   powershell -File tests/windows_smoke.ps1 -Archive release.zip -ArchiveSha256 <64 hex digits> -OutputDirectory smoke-output
 #   powershell -File tests/windows_smoke.ps1 -SettingsProbe -ExeDirectory build/settings-probe -OutputDirectory probe-captures
 #   powershell -File tests/windows_smoke.ps1 -SettingsProbe -IncludeShaderSettings -ExeDirectory build/shader_probe -OutputDirectory shader-captures
+#   powershell -File tests/windows_smoke.ps1 -SettingsProbe -RealCrt -ExeDirectory temporary-mesa-probe -OutputDirectory real-crt-proof
 # Exit codes: 0 PASS (this limited smoke test); 1 FAIL; 2 UNSUPPORTED desktop.
 # Output JSON explicitly distinguishes screenshots/GUI startup from game QA.
 [CmdletBinding(DefaultParameterSetName = 'Directory')]
@@ -21,6 +22,7 @@ param(
     [string]$PythonExecutable = 'python',
     [switch]$SettingsProbe,
     [switch]$IncludeShaderSettings,
+    [switch]$RealCrt,
     [ValidateRange(5, 60)] [int]$WindowTimeoutSeconds = 30
 )
 Set-StrictMode -Version Latest
@@ -28,6 +30,9 @@ $ErrorActionPreference = 'Stop'
 $smokeExit = 1
 $smokeProcess = $null
 $smokeWork = $null
+$savedGalliumDriver = $env:GALLIUM_DRIVER
+$savedSoftwareGl = $env:LIBGL_ALWAYS_SOFTWARE
+if ($RealCrt) { $IncludeShaderSettings = $true }
 $smokeOutput = [System.IO.Path]::GetFullPath($OutputDirectory)
 [void][System.IO.Directory]::CreateDirectory($smokeOutput)
 $smokeReport = [ordered]@{
@@ -41,6 +46,7 @@ $smokeReport = [ordered]@{
     multi_monitor_verified = $false
     screenshot_method = 'Actual foreground window, System.Drawing.Graphics.CopyFromScreen'
     shader_settings_requested = [bool]$IncludeShaderSettings
+    real_crt_requested = [bool]$RealCrt
     screenshots = @()
     started_utc = [DateTime]::UtcNow.ToString('o')
 }
@@ -54,6 +60,12 @@ if ($IncludeShaderSettings) {
     $smokeReport['shader_settings_captured'] = $false
     $smokeReport['shader_gameplay_verified'] = $false
 }
+if ($RealCrt) {
+    $smokeReport['scope'] += '; verifies actual Real CRT 14-pass OpenGL output and parameter dialog on an owned pattern'
+    $smokeReport['actual_glsl_pipeline_verified'] = $false
+    $smokeReport['shader_parameters_captured'] = $false
+    $smokeReport['software_opengl_verified'] = $false
+}
 
 function Write-SmokeReport {
     $smokeReport['finished_utc'] = [DateTime]::UtcNow.ToString('o')
@@ -62,6 +74,7 @@ function Write-SmokeReport {
 function Unsupported([string]$Reason) { throw ('UNSUPPORTED: ' + $Reason) }
 
 try {
+    if ($RealCrt -and -not $SettingsProbe) { throw '-RealCrt requires -SettingsProbe; it never claims a full game test.' }
     if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
         Unsupported 'This test requires Windows; cross-compilation is not UI execution.'
     }
@@ -98,6 +111,8 @@ public static class GensSmokeWin32 {
     [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr window);
     [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr window);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] public static extern IntPtr GetAncestor(IntPtr window, uint flags);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern IntPtr FindWindowEx(IntPtr parent, IntPtr after, string className, string title);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] public static extern IntPtr OpenInputDesktop(uint flags, bool inherit, uint access);
     [DllImport("user32.dll")] public static extern bool CloseDesktop(IntPtr desktop);
@@ -126,9 +141,15 @@ public static class GensSmokeWin32 {
         },IntPtr.Zero);
         return windows.ToArray();
     }
+    public static WindowInfo Preview(IntPtr parent) {
+        IntPtr window=FindWindowEx(parent,IntPtr.Zero,"GensKoShaderPreview",null);
+        if(window==IntPtr.Zero||!IsWindowVisible(window)) throw new InvalidOperationException("The actual renderer preview child window is unavailable.");
+        var title=new StringBuilder(1024);GetWindowText(window,title,title.Capacity);
+        return new WindowInfo {Handle=window.ToInt64(),ClassName="GensKoShaderPreview",Title=title.ToString()};
+    }
     public static CaptureInfo Capture(IntPtr window,string path,bool clientOnly) {
         if(!IsWindow(window)||!IsWindowVisible(window)||IsIconic(window)) throw new InvalidOperationException("Target window is not visible.");
-        if(GetForegroundWindow()!=window) throw new InvalidOperationException("UNSUPPORTED: Cannot capture the target as the foreground window.");
+        if(GetForegroundWindow()!=GetAncestor(window,2)) throw new InvalidOperationException("UNSUPPORTED: Cannot capture the target as the foreground window.");
         Rect rect;
         if(clientOnly) {
             if(!GetClientRect(window,out rect)) throw new InvalidOperationException("GetClientRect failed.");
@@ -198,8 +219,41 @@ Message=1
 [Sound]
 State=0
 '@ | Set-Content -LiteralPath (Join-Path $smokeRun 'Gens.cfg') -Encoding Unicode
+    if ($RealCrt) {
+        # A copied user's shader or GDI preference cannot silently change the
+        # pinned fixture. Only this private running copy is reset.
+        @'
+[Video]
+KeepAspect=1
+IntegerScale=0
+GDI=0
+Shader=
+'@ | Set-Content -LiteralPath (Join-Path $smokeRun 'Gens-KO-video.ini') -Encoding Unicode
+        foreach ($stale in @('Gens-KO-shaders.ini', 'real-crt-probe.json', 'real-crt-probe.json.tmp', 'Gens-KO-renderer.log')) {
+            $staleFile = Join-Path $smokeRun $stale
+            if (Test-Path -LiteralPath $staleFile) { Remove-Item -LiteralPath $staleFile -Force }
+        }
+        $mesaMarker = Join-Path $smokeRun 'CI_MESA_RUNTIME.json'
+        if (Test-Path -LiteralPath $mesaMarker) {
+            $mesaRuntime = Get-Content -LiteralPath $mesaMarker -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($mesaRuntime.status -ne 'PREPARED') { throw 'The supplied Mesa runtime was not prepared successfully.' }
+            foreach ($runtimeFile in $mesaRuntime.runtime_files) {
+                $runtimePath = Join-Path $smokeRun $runtimeFile.file
+                if ((Get-FileHash -LiteralPath $runtimePath -Algorithm SHA256).Hash.ToLowerInvariant() -ne $runtimeFile.sha256) {
+                    throw ('Mesa runtime DLL changed after preparation: ' + $runtimeFile.file)
+                }
+            }
+            $env:GALLIUM_DRIVER = 'llvmpipe'
+            $env:LIBGL_ALWAYS_SOFTWARE = '1'
+            $smokeReport['mesa_runtime'] = $mesaRuntime
+        }
+    }
     if ($SettingsProbe) {
-        $smokeProcess = Start-Process -FilePath $exe -WorkingDirectory $smokeRun -PassThru
+        if ($RealCrt) {
+            $smokeProcess = Start-Process -FilePath $exe -WorkingDirectory $smokeRun -ArgumentList '--real-crt' -PassThru
+        } else {
+            $smokeProcess = Start-Process -FilePath $exe -WorkingDirectory $smokeRun -PassThru
+        }
     } else {
         $rom = Join-Path $smokeWork 'Gens_KO_original_smoke.bin'
         $generator = Join-Path $PSScriptRoot 'make_smoke_rom.py'
@@ -229,11 +283,12 @@ State=0
     }
     function Capture-SmokeWindow($Window, [string]$Name, [bool]$ClientOnly = $false) {
         $handle = [IntPtr]$Window.Handle
-        [void][GensSmokeWin32]::ShowWindow($handle, 9)
-        [void][GensSmokeWin32]::BringWindowToTop($handle)
-        [void][GensSmokeWin32]::SetForegroundWindow($handle)
+        $owner = [GensSmokeWin32]::GetAncestor($handle, 2)
+        [void][GensSmokeWin32]::ShowWindow($owner, 9)
+        [void][GensSmokeWin32]::BringWindowToTop($owner)
+        [void][GensSmokeWin32]::SetForegroundWindow($owner)
         $deadline = [DateTime]::UtcNow.AddSeconds(3)
-        while ([GensSmokeWin32]::GetForegroundWindow() -ne $handle -and [DateTime]::UtcNow -lt $deadline) {
+        while ([GensSmokeWin32]::GetForegroundWindow() -ne $owner -and [DateTime]::UtcNow -lt $deadline) {
             Start-Sleep -Milliseconds 100
         }
         Start-Sleep -Milliseconds 500
@@ -254,8 +309,50 @@ State=0
         while ([GensSmokeWin32]::IsWindow($handle) -and [DateTime]::UtcNow -lt $deadline) { Start-Sleep -Milliseconds 100; Assert-Alive }
         if ([GensSmokeWin32]::IsWindow($handle)) { throw 'Settings dialog did not close within five seconds.' }
     }
+    function Assert-RealCrtProof($Proof, [bool]$RequireClosed = $false) {
+        if ($Proof.status -ne 'PASS') { throw ('Real CRT renderer proof is not PASS: ' + $Proof.status + '; ' + $Proof.diagnostic) }
+        if ($Proof.process_id -ne $smokeProcess.Id) { throw 'Renderer proof belongs to a different or stale process.' }
+        if ($Proof.requested_passes -ne 14 -or $Proof.parsed_passes -ne 14 -or $Proof.active_passes -ne 14 -or
+            $Proof.parsed_feedback_pass -ne 6 -or $Proof.active_feedback_pass -ne 6 -or
+            $Proof.parsed_float_passes -le 0 -or $Proof.parameter_count -le 0) {
+            throw 'The actual renderer is not running the required 14-pass, float-framebuffer, feedback Real CRT preset.'
+        }
+        if (-not $Proof.preset_load_succeeded -or $Proof.verified_presentations -lt 3 -or
+            $Proof.gl_error -ne 0 -or $Proof.framebuffer_sampled_colors -lt 8 -or
+            -not $Proof.shader_output_differs_from_baseline -or
+            -not $Proof.gl_vendor -or -not $Proof.gl_renderer -or -not $Proof.gl_version -or
+            $Proof.renderer_status -notlike 'OpenGL *GLSL 14*') {
+            throw 'Actual OpenGL presentation/readback did not pass; compilation or GDI fallback alone is insufficient.'
+        }
+        if ($RequireClosed -and -not $Proof.closed_normally) { throw 'Renderer proof does not confirm a normal close.' }
+        if ($smokeReport.Contains('mesa_runtime') -and $Proof.gl_renderer -notmatch '(?i)llvmpipe') {
+            throw 'Mesa was prepared, but the active renderer is not the requested llvmpipe software OpenGL device.'
+        }
+    }
+    function Wait-RealCrtProof {
+        # Software shader compilation can take longer than window creation.
+        # The bounded poll retains startup failures instead of timing out silently.
+        $proofPath = Join-Path $smokeRun 'real-crt-probe.json'
+        $deadline = [DateTime]::UtcNow.AddSeconds(120)
+        do {
+            Assert-Alive
+            if (Test-Path -LiteralPath $proofPath) {
+                $proof = Get-Content -LiteralPath $proofPath -Raw -Encoding UTF8 | ConvertFrom-Json
+                if ($proof.status -eq 'FAIL') { throw ('Real CRT renderer failed: ' + $proof.diagnostic) }
+                if ($proof.status -eq 'PASS') { Assert-RealCrtProof $proof; return $proof }
+                if ($proof.status -ne 'PENDING') { throw 'Renderer proof contains an unknown status.' }
+            }
+            Start-Sleep -Milliseconds 150
+        } while ([DateTime]::UtcNow -lt $deadline)
+        throw 'Real CRT did not complete three verified OpenGL presentations within 120 seconds.'
+    }
     $mainClass = if ($SettingsProbe) { 'GensKoSettingsProbe' } else { 'Gens KO' }
     $main = Wait-SmokeWindow $mainClass
+    if ($RealCrt) {
+        [void][GensSmokeWin32]::BringWindowToTop([IntPtr]$main.Handle)
+        [void][GensSmokeWin32]::SetForegroundWindow([IntPtr]$main.Handle)
+        $smokeReport['renderer_initial_proof'] = Wait-RealCrtProof
+    }
     Start-Sleep -Seconds 2
     Assert-Alive
     $main = Wait-SmokeWindow $mainClass
@@ -263,6 +360,10 @@ State=0
     if ($unexpectedDialogs.Count -gt 0) { throw ('Unexpected startup dialog: ' + ($unexpectedDialogs | ConvertTo-Json -Compress)) }
     if ($SettingsProbe) {
         Capture-SmokeWindow $main '01-settings-probe.png'
+        if ($RealCrt) {
+            $preview = [GensSmokeWin32]::Preview([IntPtr]$main.Handle)
+            Capture-SmokeWindow $preview '02-real-crt-preview.png' $true
+        }
     } else {
         Capture-SmokeWindow $main '01-main-homebrew.png'
         Capture-SmokeWindow $main '02-homebrew-client.png' $true
@@ -281,6 +382,15 @@ State=0
         if (-not [GensSmokeWin32]::PostMessage([IntPtr]$main.Handle, 0x111, [IntPtr]57001, [IntPtr]::Zero)) { throw 'Could not request shader settings.' }
         $shaderDialog = Wait-SmokeWindow 'GensKoVideoSettings'
         Capture-SmokeWindow $shaderDialog '05-shader-settings.png'
+        if ($RealCrt) {
+            if (-not [GensSmokeWin32]::PostMessage([IntPtr]$shaderDialog.Handle, 0x111, [IntPtr]5110, [IntPtr]::Zero)) {
+                throw 'Could not request actual loaded shader parameters.'
+            }
+            $parametersDialog = Wait-SmokeWindow 'GensKoShaderParameters'
+            Capture-SmokeWindow $parametersDialog '06-real-crt-parameters.png'
+            Close-SmokeDialog $parametersDialog
+            $smokeReport['shader_parameters_captured'] = $true
+        }
         Close-SmokeDialog $shaderDialog
         $smokeReport['shader_settings_captured'] = $true
     }
@@ -289,6 +399,13 @@ State=0
     if (-not $smokeProcess.WaitForExit(10000)) { throw 'Emulator did not exit normally within ten seconds.' }
     $smokeReport['process_exit_code'] = $smokeProcess.ExitCode
     if ($smokeProcess.ExitCode -ne 0) { throw ('Emulator exited with nonzero code: ' + $smokeProcess.ExitCode) }
+    if ($RealCrt) {
+        $finalProof = Get-Content -LiteralPath (Join-Path $smokeRun 'real-crt-probe.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        Assert-RealCrtProof $finalProof $true
+        $smokeReport['renderer_final_proof'] = $finalProof
+        $smokeReport['actual_glsl_pipeline_verified'] = $true
+        $smokeReport['software_opengl_verified'] = $finalProof.gl_renderer -match '(?i)llvmpipe'
+    }
     $smokeReport['status'] = 'PASS'
     $smokeReport['clean_exit'] = $true
     $smokeExit = 0
@@ -308,12 +425,16 @@ State=0
         }
     }
     if ($null -ne $smokeWork -and (Test-Path -LiteralPath $smokeWork)) {
-        $startupLog = Join-Path $smokeWork 'run/Gens-KO-startup.log'
-        if (Test-Path -LiteralPath $startupLog) { Copy-Item -LiteralPath $startupLog -Destination (Join-Path $smokeOutput 'Gens-KO-startup.log') -Force }
+        foreach ($evidenceName in @('Gens-KO-startup.log', 'Gens-KO-renderer.log', 'real-crt-probe.json', 'CI_MESA_RUNTIME.json')) {
+            $evidence = Join-Path (Join-Path $smokeWork 'run') $evidenceName
+            if (Test-Path -LiteralPath $evidence) { Copy-Item -LiteralPath $evidence -Destination (Join-Path $smokeOutput $evidenceName) -Force }
+        }
         # All copied program/config/homebrew files are private temporary inputs;
         # public output contains only the exact screenshots, log and report.
         Remove-Item -LiteralPath $smokeWork -Recurse -Force -ErrorAction SilentlyContinue
     }
+    $env:GALLIUM_DRIVER = $savedGalliumDriver
+    $env:LIBGL_ALWAYS_SOFTWARE = $savedSoftwareGl
     Write-SmokeReport
 }
 Write-Output ('Windows smoke result: ' + $smokeReport['status'])

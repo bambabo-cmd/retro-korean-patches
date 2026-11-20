@@ -17,6 +17,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <stdint.h>
+#include <set>
 
 #ifndef GL_BGRA
 #define GL_BGRA 0x80E1
@@ -36,6 +38,14 @@
 #define GL_COLOR_ATTACHMENT0 0x8CE0
 #define GL_FRAMEBUFFER_COMPLETE 0x8CD5
 #define GL_MAX_TEXTURE_IMAGE_UNITS 0x8872
+#endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F 0x881A
+#endif
+#ifndef GL_CLAMP_VERTEX_COLOR
+#define GL_CLAMP_VERTEX_COLOR 0x891A
+#define GL_CLAMP_FRAGMENT_COLOR 0x891B
+#define GL_CLAMP_READ_COLOR 0x891C
 #endif
 
 typedef GLuint (APIENTRY *FnCreateShader)(GLenum);
@@ -69,6 +79,7 @@ typedef void (APIENTRY *FnBindFramebuffer)(GLenum,GLuint);
 typedef void (APIENTRY *FnFramebufferTexture2D)(GLenum,GLenum,GLenum,GLuint,GLint);
 typedef GLenum (APIENTRY *FnCheckFramebufferStatus)(GLenum);
 typedef void (APIENTRY *FnGetActiveUniform)(GLuint,GLuint,GLsizei,GLsizei *,GLint *,GLenum *,char *);
+typedef void (APIENTRY *FnClampColor)(GLenum,GLenum);
 typedef BOOL (WINAPI *FnSwapInterval)(int);
 
 struct GlFunctions {
@@ -84,14 +95,25 @@ struct GlFunctions {
     FnActiveTexture ActiveTexture; FnGenFramebuffers GenFramebuffers;
     FnDeleteFramebuffers DeleteFramebuffers; FnBindFramebuffer BindFramebuffer;
     FnFramebufferTexture2D FramebufferTexture2D; FnCheckFramebufferStatus CheckFramebufferStatus;
-    FnGetActiveUniform GetActiveUniform; FnSwapInterval SwapInterval;
+    FnGetActiveUniform GetActiveUniform; FnClampColor ClampColor; FnSwapInterval SwapInterval;
 };
 static GlFunctions glx;
+struct ShaderSampler {
+    GLint location;
+    /* -1: this pass' input, -2: original game frame, -3: feedback,
+       nonnegative: an earlier pass' current-frame output. */
+    int source;
+};
 struct Pass {
     KoShaderPass spec;
-    GLuint program,texture,fbo;
+    GLuint program,texture,fbo,historyTexture,historyFbo;
     int width,height;
-    Pass():program(0),texture(0),fbo(0),width(0),height(0){}
+    std::vector<ShaderSampler> samplers;
+    Pass():program(0),texture(0),fbo(0),historyTexture(0),historyFbo(0),width(0),height(0){}
+};
+struct ShaderParameter {
+    std::string name,label;
+    float default_value,minimum,maximum,step;
 };
 static HWND window=0;
 /* A separate child DC makes GDI fallback valid even after a non-GDI-capable
@@ -108,6 +130,15 @@ static int vsync=1,lastVsync=-1;
 static std::vector<unsigned int> frame(320*240,0xff000000u);
 static std::vector<Pass> passes;
 static std::map<std::string,float> parameters;
+static std::vector<ShaderParameter> shaderParameters;
+static int feedbackPass=-1;
+static uint64_t submittedFrameSerial=0,feedbackFrameSerial=0;
+static bool feedbackHistoryReady=false,feedbackResetPending=true;
+static int renderedClientWidth=0,renderedClientHeight=0;
+static int renderedSourceWidth=0,renderedSourceHeight=0;
+/* Counts actual RGBA8/RGBA16F target bytes, including the extra feedback
+   bank. A 4K 14-pass Real CRT chain fits; arbitrary giant chains are bounded. */
+static const uint64_t framebufferByteLimit=512ULL*1024ULL*1024ULL;
 static std::wstring presetPath,baseDir,iniPath,status=L"초기화 중";
 static HMONITOR lastMonitor=0;
 static std::wstring overlayText;
@@ -115,6 +146,15 @@ static DWORD overlayUntil=0;
 static bool overlayWasVisible=false;
 static std::vector<unsigned int> overlayFrame;
 static void gdiDraw();
+static RECT viewport(int width,int height);
+static bool prepareTargets(std::vector<Pass> &targets,int feedback,int viewWidth,int viewHeight,
+                           bool &changed,std::string &error);
+static void loadSavedShaderParameters();
+/* Safe from UI callbacks: GL clearing is deferred until the rendering DC is
+   current. Repaint/overlay changes do not call this or advance the history. */
+static void resetFeedbackHistory() {
+    feedbackHistoryReady=false;feedbackResetPending=true;feedbackFrameSerial=0;
+}
 static LRESULT CALLBACK gdiSurfaceProc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
     if(msg==WM_ERASEBKGND)return 1;
     if(msg==WM_PAINT){PAINTSTRUCT p;BeginPaint(hwnd,&p);gdiDraw();EndPaint(hwnd,&p);return 0;}
@@ -213,6 +253,14 @@ static void loadSettings() {
     presetPath=path;
 }
 static bool saveSettings() {
+    /* Profile W APIs create ANSI files by default. A BOM on first creation
+       preserves Unicode shader paths without altering any existing INI. */
+    HANDLE initial=CreateFileW(iniPath.c_str(),GENERIC_WRITE,FILE_SHARE_READ|FILE_SHARE_WRITE,0,CREATE_NEW,FILE_ATTRIBUTE_NORMAL,0);
+    if(initial!=INVALID_HANDLE_VALUE){
+        const unsigned char bom[2]={0xff,0xfe};DWORD written=0;
+        BOOL made=WriteFile(initial,bom,2,&written,0);CloseHandle(initial);
+        if(!made||written!=2){DeleteFileW(iniPath.c_str());return false;}
+    }else if(GetLastError()!=ERROR_FILE_EXISTS&&GetLastError()!=ERROR_ALREADY_EXISTS)return false;
     return WritePrivateProfileStringW(L"Video",L"KeepAspect",keepAspect?L"1":L"0",iniPath.c_str())&&
        WritePrivateProfileStringW(L"Video",L"IntegerScale",integerScale?L"1":L"0",iniPath.c_str())&&
        WritePrivateProfileStringW(L"Video",L"GDI",forceGdi?L"1":L"0",iniPath.c_str())&&
@@ -238,6 +286,7 @@ static bool loadGl() {
     LOADEXT(GenFramebuffers);LOADEXT(DeleteFramebuffers);LOADEXT(BindFramebuffer);LOADEXT(FramebufferTexture2D);LOADEXT(CheckFramebufferStatus);
 #undef LOADEXT
     glx.SwapInterval=(FnSwapInterval)proc("wglSwapIntervalEXT");
+    glx.ClampColor=(FnClampColor)proc("glClampColor","glClampColorARB");
     glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxTexture);maxTexture=std::min(maxTexture,8192);
     glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS,&maxTextureUnits);
     return maxTexture>=1024&&maxTextureUnits>=8;
@@ -274,11 +323,17 @@ static const char stockSource[]=
     "#elif defined(FRAGMENT)\nuniform sampler2D Texture; varying vec2 coord;\n"
     "void main(){gl_FragColor=texture2D(Texture,coord);}\n#endif\n";
 
+static void destroyTargets(Pass &p) {
+    if(p.texture)glDeleteTextures(1,&p.texture);
+    if(p.fbo)glx.DeleteFramebuffers(1,&p.fbo);
+    if(p.historyTexture)glDeleteTextures(1,&p.historyTexture);
+    if(p.historyFbo)glx.DeleteFramebuffers(1,&p.historyFbo);
+    p.texture=p.fbo=p.historyTexture=p.historyFbo=0;p.width=p.height=0;
+}
 static void destroyPasses(std::vector<Pass> &v) {
     for(size_t i=0;i<v.size();++i){
         if(v[i].program)glx.DeleteProgram(v[i].program);
-        if(v[i].texture)glDeleteTextures(1,&v[i].texture);
-        if(v[i].fbo)glx.DeleteFramebuffers(1,&v[i].fbo);
+        destroyTargets(v[i]);
     }
     v.clear();
 }
@@ -291,6 +346,8 @@ static void closeGl() {
         wglMakeCurrent(0,0);wglDeleteContext(context);context=0;
     }
     stockProgram=sourceTexture=0;texWidth=texHeight=0;lastVsync=-1;
+    feedbackPass=-1;resetFeedbackHistory();
+    renderedClientWidth=renderedClientHeight=renderedSourceWidth=renderedSourceHeight=0;
     ZeroMemory(&glx,sizeof(glx));
 }
 static void errorBox(HWND parent,const std::string &message) {
@@ -298,41 +355,63 @@ static void errorBox(HWND parent,const std::string &message) {
     std::wstring text=L"셰이더를 적용하지 못했습니다. 기존 화면 설정을 유지합니다.\n\n"+wide(message);
     MessageBoxW(parent,text.c_str(),L"Gens KO 셰이더",MB_OK|MB_ICONWARNING);
 }
-static void parameterDefaults(const std::string &source,std::map<std::string,float> &values) {
+static void parameterDefaults(const std::string &source,std::map<std::string,float> &values,
+                              std::vector<ShaderParameter> &metadata) {
     std::istringstream lines(source);std::string line;
     while(std::getline(lines,line)) {
         line=trim(line);if(line.compare(0,17,"#pragma parameter")!=0)continue;
         std::istringstream nameTokens(line.substr(17));std::string name;nameTokens>>name;
         size_t first=line.find('"'),last=line.find('"',first==std::string::npos?0:first+1);
         if(name.empty()||first==std::string::npos||last==std::string::npos)continue;
-        float value=0,minimum=0,maximum=0;std::istringstream numbers(line.substr(last+1));
+        float value=0,minimum=0,maximum=0,step=0;std::istringstream numbers(line.substr(last+1));
         if(numbers>>value>>minimum>>maximum) {
+            if(!std::isfinite(value)||!std::isfinite(minimum)||!std::isfinite(maximum)||minimum>maximum)continue;
+            if(!(numbers>>step)||!std::isfinite(step)||step<=0)step=maximum>minimum?(maximum-minimum)/100.0f:1.0f;
             if(!values.count(name))values[name]=value;
             values[name]=std::max(minimum,std::min(maximum,values[name]));
+            bool found=false;for(size_t i=0;i<metadata.size();++i)if(metadata[i].name==name){found=true;break;}
+            if(!found){ShaderParameter p;p.name=name;p.label=line.substr(first+1,last-first-1);
+                p.default_value=std::max(minimum,std::min(maximum,value));p.minimum=minimum;p.maximum=maximum;p.step=step;
+                metadata.push_back(p);}
         }
     }
 }
-static bool supportedUniforms(GLuint program,const KoShaderPreset &preset,unsigned int pass,std::string &error) {
+static bool supportedUniforms(Pass &target,const KoShaderPreset &preset,unsigned int pass,std::string &error) {
+    GLuint program=target.program;std::set<int> inputs;
     GLint count=0;glx.GetProgramiv(program,GL_ACTIVE_UNIFORMS,&count);
     for(GLint i=0;i<count;++i) {
         char name[256]={0};GLint size=0;GLenum type=0;
         glx.GetActiveUniform(program,(GLuint)i,sizeof(name)-1,0,&size,&type,name);
         std::string n(name);
-        if(n.compare(0,4,"Prev")==0||n.find("Feedback")!=std::string::npos) {
-            error="Previous-frame/feedback shaders are not supported: "+n;return false;
+        if(n.compare(0,4,"Prev")==0) {
+            error="Arbitrary previous-frame inputs are not supported: "+n;return false;
         }
         if(type==GL_SAMPLER_2D) {
-            bool ok=n=="Texture"||n=="Source"||n=="OrigTexture";
+            int source=-4;
+            if(n=="Texture"||n=="Source")source=-1;
+            if(n=="OrigTexture"||n=="Original"||n=="OriginalTexture")source=-2;
+            if(n=="FeedbackTexture"||n=="Feedback") {
+                if(preset.feedback_pass<0){error="FeedbackTexture needs feedback_pass in the preset.";return false;}
+                source=-3;
+            }
             for(unsigned int j=0;j<pass;++j) {
                 std::ostringstream key;key<<"Pass"<<j+1<<"Texture";
-                if(n==key.str())ok=true;
+                if(n==key.str())source=(int)j;
                 std::ostringstream prev;prev<<"PassPrev"<<pass-j<<"Texture";
-                if(n==prev.str())ok=true;
-                if(!preset.passes[j].alias.empty()&&n==preset.passes[j].alias+"Texture")ok=true;
+                if(n==prev.str())source=(int)j;
+                if(!preset.passes[j].alias.empty()&&(n==preset.passes[j].alias+"Texture"||n==preset.passes[j].alias))source=(int)j;
             }
-            if(!ok||size!=1){error="Unsupported texture input: "+n;return false;}
+            if(source==-4||size!=1){error="Unsupported texture input: "+n;return false;}
+            ShaderSampler sampler;sampler.location=glx.GetUniformLocation(program,name);sampler.source=source;
+            if(sampler.location>=0){target.samplers.push_back(sampler);
+                inputs.insert(source==-1?(pass?(int)pass-1:-2):source);}
+        } else if((type>=0x8B5D&&type<=0x8B64)||(type>=0x8DC0&&type<=0x8DC5)||
+                  (type>=0x8DC9&&type<=0x8DD8)||(type>=0x900C&&type<=0x900F)||
+                  (type>=0x9108&&type<=0x910D)) {
+            error="Only non-array sampler2D inputs are supported: "+n;return false;
         }
     }
+    if((int)inputs.size()>maxTextureUnits){error="This shader pass needs more active texture inputs than the GPU provides.";return false;}
     return true;
 }
 
@@ -340,7 +419,8 @@ int Renderer_LoadPreset(const wchar_t *file,HWND errorParent) {
     loadSettings();std::wstring path=file?file:L"";
     if(path.empty()) {
         if(context&&wglMakeCurrent(dc,context))destroyPasses(passes);
-        presetPath.clear();parameters.clear();status=context?L"OpenGL · 셰이더 끔":L"GDI 호환 출력 · 셰이더 끔";
+        presetPath.clear();parameters.clear();shaderParameters.clear();feedbackPass=-1;resetFeedbackHistory();
+        status=context?L"OpenGL · 셰이더 끔":L"GDI 호환 출력 · 셰이더 끔";
         Renderer_Repaint(window);return 1;
     }
     if(extension(path)!=L".glsl"&&extension(path)!=L".glslp") {
@@ -353,19 +433,27 @@ int Renderer_LoadPreset(const wchar_t *file,HWND errorParent) {
     if(extension(path)==L".glsl") {
         KoShaderPass p;p.file=utf8(path);p.scale_type_x=p.scale_type_y="viewport";preset.passes.push_back(p);
     } else if(!readFile(path,data,error)||!KoParseShaderPreset(data,preset,error)) {errorBox(errorParent,error);return 0;}
-    if((int)preset.passes.size()+2>maxTextureUnits) {errorBox(errorParent,"이 GPU의 텍스처 슬롯 수로는 이 프리셋을 실행할 수 없습니다.");return 0;}
     std::vector<Pass> candidate;std::map<std::string,float> values=preset.parameters;
+    std::vector<ShaderParameter> metadata;
     for(size_t i=0;i<preset.passes.size();++i) {
         Pass p;p.spec=preset.passes[i];std::wstring shader=joined(parentPath(path),p.spec.file);
         if(extension(shader)!=L".glsl"){error="All passes must use .glsl files.";destroyPasses(candidate);errorBox(errorParent,error);return 0;}
         if(!shaderText(shader,data,error)){destroyPasses(candidate);errorBox(errorParent,error);return 0;}
-        parameterDefaults(data,values);p.program=compileProgram(data,error);
-        if(!p.program||!supportedUniforms(p.program,preset,(unsigned int)i,error)) {
+        parameterDefaults(data,values,metadata);p.program=compileProgram(data,error);
+        if(!p.program||!supportedUniforms(p,preset,(unsigned int)i,error)) {
             if(p.program)glx.DeleteProgram(p.program);destroyPasses(candidate);errorBox(errorParent,error);return 0;
         }
         candidate.push_back(p);
     }
-    destroyPasses(passes);passes.swap(candidate);parameters.swap(values);presetPath=path;
+    RECT client;GetClientRect(window,&client);
+    RECT view=viewport(std::max((LONG)1,client.right),std::max((LONG)1,client.bottom));
+    bool changed=false;
+    if(!prepareTargets(candidate,preset.feedback_pass,view.right-view.left,view.bottom-view.top,changed,error)) {
+        glx.BindFramebuffer(GL_FRAMEBUFFER,0);destroyPasses(candidate);errorBox(errorParent,error);return 0;
+    }
+    glx.BindFramebuffer(GL_FRAMEBUFFER,0);
+    destroyPasses(passes);passes.swap(candidate);parameters.swap(values);shaderParameters.swap(metadata);presetPath=path;
+    feedbackPass=preset.feedback_pass;resetFeedbackHistory();loadSavedShaderParameters();
     std::wostringstream state;state<<L"OpenGL · GLSL "<<passes.size()<<L"패스";status=state.str();
     logLine("Loaded GLSL preset: "+utf8(path));Renderer_Repaint(window);return 1;
 }
@@ -393,6 +481,11 @@ int Renderer_Init(HWND hwnd) {
     logLine(std::string("OpenGL: ")+(vendor?vendor:"")+" / "+(version?version:""));
     glGenTextures(1,&sourceTexture);frameDirty=true;
     glDisable(GL_DEPTH_TEST);glDisable(GL_BLEND);glDisable(GL_CULL_FACE);glDisable(GL_DITHER);
+    if(glx.ClampColor){
+        glx.ClampColor(GL_CLAMP_VERTEX_COLOR,GL_FALSE);
+        glx.ClampColor(GL_CLAMP_FRAGMENT_COLOR,GL_FALSE);
+        glx.ClampColor(GL_CLAMP_READ_COLOR,GL_FALSE);
+    }
     glClearColor(0,0,0,1);status=L"OpenGL · 셰이더 끔";
     std::wstring requested=presetPath;
     if(!requested.empty()&&!Renderer_LoadPreset(requested.c_str(),0))status=L"OpenGL · 저장된 셰이더 오류, 기본 출력";
@@ -411,7 +504,7 @@ void Renderer_Submit565(const unsigned short *pixels,int stride,int width,int he
         else{r=(c>>11)&31;g=(c>>5)&63;b=c&31;r=(r<<3)|(r>>2);g=(g<<2)|(g>>4);}
         b=(b<<3)|(b>>2);frame[(size_t)y*width+x]=0xff000000u|(r<<16)|(g<<8)|b;
     }
-    frameDirty=true;frameNumber=(frameNumber+1)&0x7fffffffu;
+    frameDirty=true;frameNumber=(frameNumber+1)&0x7fffffffu;++submittedFrameSerial;
 }
 void Renderer_SetOverlayUtf8(const char *text,int duration_ms) {
     overlayText=text?wide(text):std::wstring();
@@ -475,11 +568,14 @@ static void gdiDraw() {
 }
 static void uniform1i(GLuint p,const char *name,int v){GLint loc=glx.GetUniformLocation(p,name);if(loc>=0)glx.Uniform1i(loc,v);}
 static void uniform2f(GLuint p,const char *name,float x,float y){GLint loc=glx.GetUniformLocation(p,name);if(loc>=0)glx.Uniform2f(loc,x,y);}
-static void bindTexture(GLuint program,const std::string &prefix,int unit,GLuint texture,int width,int height) {
-    glx.ActiveTexture(GL_TEXTURE0+unit);glBindTexture(GL_TEXTURE_2D,texture);
-    uniform1i(program,(prefix+"Texture").c_str(),unit);
+static void uniformSize(GLuint program,const std::string &name,int width,int height) {
+    GLint loc=glx.GetUniformLocation(program,name.c_str());
+    if(loc>=0)glx.Uniform4f(loc,(float)width,(float)height,1.0f/width,1.0f/height);
+}
+static void textureSizes(GLuint program,const std::string &prefix,int width,int height) {
     uniform2f(program,(prefix+"InputSize").c_str(),(float)width,(float)height);
     uniform2f(program,(prefix+"TextureSize").c_str(),(float)width,(float)height);
+    uniformSize(program,prefix+"Size",width,height);
 }
 static void textureOptions(bool linear,const std::string &wrap) {
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,linear?GL_LINEAR:GL_NEAREST);
@@ -491,35 +587,65 @@ static void textureOptions(bool linear,const std::string &wrap) {
     glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_S,w);glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_WRAP_T,w);
     const GLfloat border[4]={0,0,0,0};glTexParameterfv(GL_TEXTURE_2D,GL_TEXTURE_BORDER_COLOR,border);
 }
+/* The preset's filter_linearN describes the texture sampled by pass N. Thus
+   an output from pass J has pass J+1's filtering, even when a much later pass
+   samples it through an alias. Setting only the current Source texture here
+   would incorrectly change Signal's nearest filtering into Glow's linear. */
+static void outputTextureOptions(int producer) {
+    int consumer=producer+1;
+    if(consumer>=0&&consumer<(int)passes.size())textureOptions(passes[consumer].spec.linear,passes[consumer].spec.wrap);
+    else textureOptions(false,"clamp_to_border");
+}
+static void bindPassSamplers(Pass &pass,int passIndex,GLuint input) {
+    std::map<GLuint,int> units;
+    for(size_t i=0;i<pass.samplers.size();++i){
+        const ShaderSampler &sampler=pass.samplers[i];GLuint texture=0;int producer=-1;
+        if(sampler.source==-1){texture=input;producer=passIndex-1;}
+        else if(sampler.source==-2)texture=sourceTexture;
+        else if(sampler.source==-3&&feedbackPass>=0){texture=passes[feedbackPass].historyTexture;producer=feedbackPass;}
+        else if(sampler.source>=0){texture=passes[sampler.source].texture;producer=sampler.source;}
+        std::map<GLuint,int>::iterator found=units.find(texture);int unit;
+        if(found==units.end()){
+            unit=(int)units.size();units[texture]=unit;
+            glx.ActiveTexture(GL_TEXTURE0+unit);glBindTexture(GL_TEXTURE_2D,texture);outputTextureOptions(producer);
+        }else unit=found->second;
+        glx.Uniform1i(sampler.location,unit);
+    }
+    glx.ActiveTexture(GL_TEXTURE0);
+}
 static void draw(GLuint program,GLuint texture,int inputWidth,int inputHeight,int outputWidth,int outputHeight,
                  bool flip,int passIndex) {
     glx.UseProgram(program);
     static const GLfloat matrix[16]={2,0,0,0,0,2,0,0,0,0,1,0,-1,-1,0,1};
     GLint loc=glx.GetUniformLocation(program,"MVPMatrix");if(loc>=0)glx.UniformMatrix4fv(loc,1,GL_FALSE,matrix);
-    uniform1i(program,"Texture",0);uniform1i(program,"Source",0);
+    if(passIndex>=0)bindPassSamplers(passes[passIndex],passIndex,texture);
+    else{glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,texture);uniform1i(program,"Texture",0);uniform1i(program,"Source",0);}
     uniform2f(program,"InputSize",(float)inputWidth,(float)inputHeight);
     uniform2f(program,"TextureSize",(float)inputWidth,(float)inputHeight);
     uniform2f(program,"OutputSize",(float)outputWidth,(float)outputHeight);
     uniform1i(program,"FrameCount",passIndex>=0&&passes[passIndex].spec.frame_mod?
         frameNumber%passes[passIndex].spec.frame_mod:frameNumber);
     uniform1i(program,"FrameDirection",1);
-    GLint sourceSize=glx.GetUniformLocation(program,"SourceSize");
-    if(sourceSize>=0)glx.Uniform4f(sourceSize,(float)inputWidth,(float)inputHeight,1.0f/inputWidth,1.0f/inputHeight);
-    bindTexture(program,"Orig",1,sourceTexture,frameWidth,frameHeight);
+    uniformSize(program,"SourceSize",inputWidth,inputHeight);
+    uniformSize(program,"KoOriginalSize",frameWidth,frameHeight);
+    uniformSize(program,"KoOutputSize",outputWidth,outputHeight);
+    textureSizes(program,"Orig",frameWidth,frameHeight);
+    textureSizes(program,"Original",frameWidth,frameHeight);
+    if(feedbackPass>=0){textureSizes(program,"Feedback",passes[feedbackPass].width,passes[feedbackPass].height);
+        if(!passes[feedbackPass].spec.alias.empty())textureSizes(program,passes[feedbackPass].spec.alias+"Feedback",passes[feedbackPass].width,passes[feedbackPass].height);}
     for(int j=0;j<passIndex;++j){
-        std::ostringstream key;key<<"Pass"<<j+1;bindTexture(program,key.str(),j+2,passes[j].texture,passes[j].width,passes[j].height);
-        std::ostringstream prev;prev<<"PassPrev"<<passIndex-j;bindTexture(program,prev.str(),j+2,passes[j].texture,passes[j].width,passes[j].height);
-        if(!passes[j].spec.alias.empty())bindTexture(program,passes[j].spec.alias,j+2,passes[j].texture,passes[j].width,passes[j].height);
+        std::ostringstream key;key<<"Pass"<<j+1;textureSizes(program,key.str(),passes[j].width,passes[j].height);
+        std::ostringstream prev;prev<<"PassPrev"<<passIndex-j;textureSizes(program,prev.str(),passes[j].width,passes[j].height);
+        if(!passes[j].spec.alias.empty())textureSizes(program,passes[j].spec.alias,passes[j].width,passes[j].height);
     }
     for(std::map<std::string,float>::const_iterator it=parameters.begin();it!=parameters.end();++it){
         loc=glx.GetUniformLocation(program,it->first.c_str());if(loc>=0)glx.Uniform1f(loc,it->second);
     }
-    glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,texture);
     static const GLfloat vertex[]={0,0,0,1,1,0,0,1,0,1,0,1,1,1,0,1};
     static const GLfloat normal[]={0,0,1,0,0,1,1,1},flipped[]={0,1,1,1,0,0,1,0};
     const GLfloat *coords=flip?flipped:normal;std::vector<GLuint> enabled;
     loc=glx.GetAttribLocation(program,"VertexCoord");if(loc>=0){glx.EnableVertexAttribArray(loc);glx.VertexAttribPointer(loc,4,GL_FLOAT,GL_FALSE,0,vertex);enabled.push_back(loc);}
-    std::vector<std::string> names;names.push_back("TexCoord");names.push_back("OrigTexCoord");
+    std::vector<std::string> names;names.push_back("TexCoord");names.push_back("OrigTexCoord");names.push_back("FeedbackTexCoord");
     for(int j=0;j<passIndex;++j){std::ostringstream a,b;a<<"Pass"<<j+1<<"TexCoord";b<<"PassPrev"<<passIndex-j<<"TexCoord";names.push_back(a.str());names.push_back(b.str());
        if(!passes[j].spec.alias.empty())names.push_back(passes[j].spec.alias+"TexCoord");}
     for(size_t j=0;j<names.size();++j){loc=glx.GetAttribLocation(program,names[j].c_str());if(loc>=0){glx.EnableVertexAttribArray(loc);glx.VertexAttribPointer(loc,2,GL_FLOAT,GL_FALSE,0,coords);enabled.push_back(loc);}}
@@ -531,14 +657,82 @@ static int scaled(double value,const std::string &type,int input,int view) {
     double n=type=="source"?value*input:(type=="viewport"?value*view:value);
     if(n<1||n>maxTexture||n!=n)return 0;return(int)(n+0.5);
 }
-static bool passTarget(Pass &p,int w,int h) {
-    if(!p.texture)glGenTextures(1,&p.texture);
-    if(!p.fbo)glx.GenFramebuffers(1,&p.fbo);
-    glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,p.texture);
-    if(p.width!=w||p.height!=h){glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,w,h,0,GL_BGRA,GL_UNSIGNED_BYTE,0);p.width=w;p.height=h;}
-    textureOptions(false,"clamp_to_border");glx.BindFramebuffer(GL_FRAMEBUFFER,p.fbo);
-    glx.FramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,p.texture,0);
-    return glx.CheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
+static bool allocateTarget(GLuint &texture,GLuint &fbo,int w,int h,bool floating,std::string &error) {
+    glGenTextures(1,&texture);glx.GenFramebuffers(1,&fbo);
+    if(!texture||!fbo){error="Cannot create shader framebuffer objects.";return false;}
+    glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,texture);
+    glTexImage2D(GL_TEXTURE_2D,0,floating?GL_RGBA16F:GL_RGBA8,w,h,0,GL_RGBA,floating?GL_FLOAT:GL_UNSIGNED_BYTE,0);
+    if(glGetError()!=GL_NO_ERROR){error=floating?"The GPU cannot allocate the required RGBA16F shader target.":"The GPU cannot allocate the shader target.";return false;}
+    textureOptions(false,"clamp_to_border");glx.BindFramebuffer(GL_FRAMEBUFFER,fbo);
+    glx.FramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,texture,0);
+    if(glx.CheckFramebufferStatus(GL_FRAMEBUFFER)!=GL_FRAMEBUFFER_COMPLETE||glGetError()!=GL_NO_ERROR){
+        error=floating?"The GPU does not support renderable RGBA16F targets.":"Shader framebuffer is incomplete.";return false;
+    }
+    /* Feedback must start as transparent black: undefined texture memory is
+       never a valid previous game frame. Float targets preserve signed/HDR. */
+    glClearColor(0,0,0,0);glClear(GL_COLOR_BUFFER_BIT);
+    return glGetError()==GL_NO_ERROR;
+}
+static bool prepareTargets(std::vector<Pass> &targets,int feedback,int viewWidth,int viewHeight,
+                           bool &changed,std::string &error) {
+    changed=false;
+    if(feedback<-1||feedback>=(int)targets.size()){error="Invalid feedback pass index.";return false;}
+    std::vector<int> widths(targets.size()),heights(targets.size());
+    uint64_t total=0;int iw=frameWidth,ih=frameHeight;
+    for(size_t i=0;i<targets.size();++i){
+        const Pass &p=targets[i];int w=scaled(p.spec.scale_x,p.spec.scale_type_x,iw,viewWidth),h=scaled(p.spec.scale_y,p.spec.scale_type_y,ih,viewHeight);
+        if(!w||!h){error="Shader target dimensions exceed the GPU's maximum texture size.";return false;}
+        const uint64_t pixels=(uint64_t)(unsigned int)w*(uint64_t)(unsigned int)h;
+        const uint64_t bytes=pixels*(p.spec.float_framebuffer?8ULL:4ULL)*((int)i==feedback?2ULL:1ULL);
+        if(bytes>framebufferByteLimit||total>framebufferByteLimit-bytes){
+            error="Shader framebuffer allocation exceeds the 512 MiB limit (including feedback).";return false;
+        }
+        total+=bytes;widths[i]=w;heights[i]=h;iw=w;ih=h;
+    }
+    std::vector<Pass> pending(targets.size());
+    /* A failed resize/preset load must not delete the last working targets.
+       Allocation is transactional; old plus new targets peak below 1 GiB. */
+    for(int i=0;i<16&&glGetError()!=GL_NO_ERROR;++i){}
+    for(size_t i=0;i<targets.size();++i){
+        const Pass &old=targets[i];bool needsHistory=(int)i==feedback;
+        if(old.texture&&old.fbo&&old.width==widths[i]&&old.height==heights[i]&&
+           ((old.historyTexture!=0)==needsHistory)&&((old.historyFbo!=0)==needsHistory))continue;
+        Pass &next=pending[i];next.width=widths[i];next.height=heights[i];
+        if(!allocateTarget(next.texture,next.fbo,next.width,next.height,old.spec.float_framebuffer,error)||
+           (needsHistory&&!allocateTarget(next.historyTexture,next.historyFbo,next.width,next.height,old.spec.float_framebuffer,error))){
+            glx.BindFramebuffer(GL_FRAMEBUFFER,0);destroyPasses(pending);glClearColor(0,0,0,1);
+            if(error.empty())error="Shader target initialization failed.";return false;
+        }
+        changed=true;
+    }
+    glx.BindFramebuffer(GL_FRAMEBUFFER,0);glClearColor(0,0,0,1);
+    for(size_t i=0;i<targets.size();++i)if(pending[i].texture){
+        std::swap(targets[i].texture,pending[i].texture);std::swap(targets[i].fbo,pending[i].fbo);
+        std::swap(targets[i].historyTexture,pending[i].historyTexture);std::swap(targets[i].historyFbo,pending[i].historyFbo);
+        std::swap(targets[i].width,pending[i].width);std::swap(targets[i].height,pending[i].height);
+    }
+    destroyPasses(pending);
+    return true;
+}
+static void clearFeedbackTargets() {
+    if(feedbackPass>=0&&feedbackPass<(int)passes.size()){
+        Pass &p=passes[feedbackPass];glClearColor(0,0,0,0);
+        glx.BindFramebuffer(GL_FRAMEBUFFER,p.fbo);glClear(GL_COLOR_BUFFER_BIT);
+        glx.BindFramebuffer(GL_FRAMEBUFFER,p.historyFbo);glClear(GL_COLOR_BUFFER_BIT);
+        glx.BindFramebuffer(GL_FRAMEBUFFER,0);glClearColor(0,0,0,1);
+    }
+    feedbackHistoryReady=false;feedbackResetPending=false;
+}
+/* Kept as a small production state machine so the headless regression can
+   exercise real bank IDs across submit, paint, resize and failed-frame paths. */
+static void beginFeedbackFrame() {
+    if(feedbackResetPending)clearFeedbackTargets();
+    if(feedbackPass>=0&&feedbackHistoryReady&&feedbackFrameSerial!=submittedFrameSerial){
+        Pass &p=passes[feedbackPass];std::swap(p.texture,p.historyTexture);std::swap(p.fbo,p.historyFbo);
+    }
+}
+static void completeFeedbackFrame() {
+    feedbackFrameSerial=submittedFrameSerial;feedbackHistoryReady=feedbackPass>=0;
 }
 static bool glDrawFrame() {
     if(!wglMakeCurrent(dc,context))return false;
@@ -552,22 +746,35 @@ static bool glDrawFrame() {
         texWidth=frameWidth;texHeight=frameHeight;frameDirty=false;
     } else if(frameDirty){glTexSubImage2D(GL_TEXTURE_2D,0,0,0,frameWidth,frameHeight,GL_BGRA,GL_UNSIGNED_BYTE,pixels);frameDirty=false;}
     textureOptions(false,"clamp_to_border");
-    GLuint input=sourceTexture;int iw=frameWidth,ih=frameHeight;unsigned long long total=0;
-    for(size_t i=0;i<passes.size();++i){
-        Pass &p=passes[i];int w=scaled(p.spec.scale_x,p.spec.scale_type_x,iw,viewWidth),h=scaled(p.spec.scale_y,p.spec.scale_type_y,ih,viewHeight);
-        total+=(unsigned long long)w*h;
-        if(!w||!h||total>32u*1024u*1024u||!passTarget(p,w,h)) {
-            status=L"OpenGL · 셰이더 출력 크기/메모리 오류, 기본 출력";logLine("Shader framebuffer allocation failed or exceeds 32M pixels.");
-            glx.BindFramebuffer(GL_FRAMEBUFFER,0);destroyPasses(passes);input=sourceTexture;iw=frameWidth;ih=frameHeight;break;
+    if(glGetError()!=GL_NO_ERROR){logLine("OpenGL source texture upload failed.");return false;}
+    GLuint input=sourceTexture;int iw=frameWidth,ih=frameHeight;
+    bool changed=false;std::string error;
+    bool ready=prepareTargets(passes,feedbackPass,viewWidth,viewHeight,changed,error);
+    if(!ready){
+        const std::wstring failure=L"OpenGL · 셰이더 출력 크기/메모리 오류, 기본 출력";
+        if(status!=failure)logLine(error);status=failure;resetFeedbackHistory();
+    }else{
+        if(changed||renderedClientWidth!=client.right||renderedClientHeight!=client.bottom||
+           renderedSourceWidth!=frameWidth||renderedSourceHeight!=frameHeight)resetFeedbackHistory();
+        renderedClientWidth=client.right;renderedClientHeight=client.bottom;
+        renderedSourceWidth=frameWidth;renderedSourceHeight=frameHeight;
+        beginFeedbackFrame();
+        for(size_t i=0;i<passes.size();++i){
+            Pass &p=passes[i];glx.BindFramebuffer(GL_FRAMEBUFFER,p.fbo);
+            glViewport(0,0,p.width,p.height);glClear(GL_COLOR_BUFFER_BIT);
+            draw(p.program,input,iw,ih,p.width,p.height,false,(int)i);
+            input=p.texture;iw=p.width;ih=p.height;
         }
-        glViewport(0,0,w,h);glClear(GL_COLOR_BUFFER_BIT);glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,input);
-        textureOptions(p.spec.linear,p.spec.wrap);draw(p.program,input,iw,ih,w,h,false,(int)i);
-        input=p.texture;iw=w;ih=h;
+        /* Same-frame WM_PAINT/resize-free overlay redraws keep the same READ
+           bank. Only a newly submitted emulated frame can advance feedback. */
+        completeFeedbackFrame();
+        if(!passes.empty()){std::wostringstream message;message<<L"OpenGL · GLSL "<<passes.size()<<L"패스";status=message.str();}
     }
     glx.BindFramebuffer(GL_FRAMEBUFFER,0);glViewport(0,0,client.right,client.bottom);glClear(GL_COLOR_BUFFER_BIT);
     glViewport(dest.left,client.bottom-dest.bottom,viewWidth,viewHeight);
     glx.ActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,input);textureOptions(false,"clamp_to_edge");
     draw(stockProgram,input,iw,ih,viewWidth,viewHeight,true,-1);glx.UseProgram(0);
+    if(glGetError()!=GL_NO_ERROR){logLine("OpenGL shader drawing failed.");return false;}
     return SwapBuffers(dc)!=FALSE;
 }
 void Renderer_Repaint(HWND hwnd) {
@@ -593,8 +800,18 @@ void Renderer_DisplayChanged(HWND hwnd) {
 }
 void Renderer_SetVSync(int enabled){vsync=enabled?1:0;}
 const wchar_t *Renderer_Status(){return status.c_str();}
+int Renderer_ActivePassCount(){return context?(int)passes.size():0;}
+int Renderer_ParameterCount(){return (int)shaderParameters.size();}
+int Renderer_FeedbackPass(){return context?feedbackPass:-1;}
 
-enum { VIDEO_PRESET=5101,VIDEO_BROWSE,VIDEO_PATH,VIDEO_ASPECT,VIDEO_INTEGER,VIDEO_GDI,VIDEO_APPLY,VIDEO_STATE,VIDEO_CLOSE };
+#include "shader_parameters_ui.inc"
+
+enum { VIDEO_PRESET=5101,VIDEO_BROWSE,VIDEO_PATH,VIDEO_ASPECT,VIDEO_INTEGER,VIDEO_GDI,VIDEO_APPLY,VIDEO_STATE,VIDEO_CLOSE,VIDEO_PARAMETERS };
+static const wchar_t *builtinPaths[]={L"",L"shaders\\sharp.glslp",L"shaders\\smooth.glslp",L"shaders\\scanlines.glslp",L"shaders\\crt.glslp",L"shaders\\two-pass.glslp",L"shaders\\retroarch-crt-pi.glslp",
+    L"shaders\\real-crt-phosphor\\real-crt-phosphor.glslp",L"shaders\\real-crt-phosphor\\presets\\4K\\4k-base.glslp",L"shaders\\real-crt-phosphor\\presets\\Ally\\ally-base.glslp"};
+static const wchar_t *builtinNames[]={L"셰이더 끔",L"선명한 픽셀",L"부드러운 화면",L"가벼운 스캔라인",L"CRT 모니터",L"2패스 데모",L"RetroArch CRT-Pi",
+    L"Real CRT Phosphor · 기본",L"Real CRT Phosphor · 4K",L"Real CRT Phosphor · Ally 1080p"};
+static const int builtinCount=sizeof(builtinPaths)/sizeof(builtinPaths[0]);
 static HFONT dialogFont=0;
 static HWND control(HWND owner,const wchar_t *type,const wchar_t *text,DWORD style,int x,int y,int w,int h,int id) {
     HWND child=CreateWindowExW(type==std::wstring(L"EDIT")?WS_EX_CLIENTEDGE:0,type,text,WS_CHILD|WS_VISIBLE|style,x,y,w,h,owner,(HMENU)(INT_PTR)id,GetModuleHandleW(0),0);
@@ -602,18 +819,20 @@ static HWND control(HWND owner,const wchar_t *type,const wchar_t *text,DWORD sty
 }
 static void selectBuiltin(HWND dlg) {
     int s=(int)SendDlgItemMessageW(dlg,VIDEO_PRESET,CB_GETCURSEL,0,0);
-    const wchar_t *files[]={L"",L"shaders\\sharp.glslp",L"shaders\\smooth.glslp",L"shaders\\scanlines.glslp",L"shaders\\crt.glslp",L"shaders\\two-pass.glslp",L"shaders\\retroarch-crt-pi.glslp"};
-    if(s>=0&&s<7)SetDlgItemTextW(dlg,VIDEO_PATH,s==0?L"":(baseDir+files[s]).c_str());
+    if(s>=0&&s<builtinCount)SetDlgItemTextW(dlg,VIDEO_PATH,s==0?L"":(baseDir+builtinPaths[s]).c_str());
 }
 static LRESULT CALLBACK videoProc(HWND dlg,UINT msg,WPARAM wp,LPARAM lp) {
     if(msg==WM_CREATE){
         dialogFont=CreateFontW(-16,0,0,0,FW_NORMAL,FALSE,FALSE,FALSE,DEFAULT_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH,L"Malgun Gothic");
         control(dlg,L"STATIC",L"화면 출력 / RetroArch GLSL 셰이더",0,20,16,600,26,0);
         HWND combo=control(dlg,L"COMBOBOX",L"",WS_TABSTOP|CBS_DROPDOWNLIST,20,54,320,220,VIDEO_PRESET);
-        const wchar_t *names[]={L"셰이더 끔",L"선명한 픽셀",L"부드러운 화면",L"가벼운 스캔라인",L"CRT 모니터",L"2패스 데모",L"RetroArch CRT-Pi",L"외부 GLSL 프리셋"};
-        for(int i=0;i<8;++i)SendMessageW(combo,CB_ADDSTRING,0,(LPARAM)names[i]);
-        SendMessageW(combo,CB_SETCURSEL,presetPath.empty()?0:7,0);
+        for(int i=0;i<builtinCount;++i)SendMessageW(combo,CB_ADDSTRING,0,(LPARAM)builtinNames[i]);
+        SendMessageW(combo,CB_ADDSTRING,0,(LPARAM)L"외부 GLSL 프리셋");
+        int selected=presetPath.empty()?0:builtinCount;
+        for(int i=1;i<builtinCount;++i)if(_wcsicmp(presetPath.c_str(),(baseDir+builtinPaths[i]).c_str())==0)selected=i;
+        SendMessageW(combo,CB_SETCURSEL,selected,0);
         control(dlg,L"BUTTON",L"파일 선택...",WS_TABSTOP|BS_PUSHBUTTON,350,53,130,30,VIDEO_BROWSE);
+        control(dlg,L"BUTTON",L"세부 설정...",WS_TABSTOP|BS_PUSHBUTTON,490,53,170,30,VIDEO_PARAMETERS);
         control(dlg,L"EDIT",presetPath.c_str(),WS_TABSTOP|ES_AUTOHSCROLL,20,96,640,28,VIDEO_PATH);
         HWND c=control(dlg,L"BUTTON",L"4:3 화면 비율 유지",WS_TABSTOP|BS_AUTOCHECKBOX,20,145,290,28,VIDEO_ASPECT);
         SendMessageW(c,BM_SETCHECK,keepAspect?BST_CHECKED:BST_UNCHECKED,0);
@@ -621,7 +840,7 @@ static LRESULT CALLBACK videoProc(HWND dlg,UINT msg,WPARAM wp,LPARAM lp) {
         SendMessageW(c,BM_SETCHECK,integerScale?BST_CHECKED:BST_UNCHECKED,0);
         c=control(dlg,L"BUTTON",L"GDI 호환 출력 사용 (셰이더 제외)",WS_TABSTOP|BS_AUTOCHECKBOX,20,184,620,28,VIDEO_GDI);
         SendMessageW(c,BM_SETCHECK,forceGdi?BST_CHECKED:BST_UNCHECKED,0);
-        control(dlg,L"STATIC",L".glsl / .glslp · 최대 8패스 · 배율/필터/기본 파라미터 지원\nSlang/Cg, LUT, 이전 프레임, 피드백, float/sRGB 버퍼는 지원하지 않습니다.\n모니터 이동과 포커스 변경 시 마지막 화면을 유지합니다.",0,20,230,640,83,0);
+        control(dlg,L"STATIC",L".glsl / .glslp · 최대 16패스 · 실수 버퍼·프레임 피드백 지원\nReal CRT Phosphor v1.4.3 Gens용 포함 (OpenGL 3.0 이상 필요)\n원본 .slangp 직접 불러오기, LUT, sRGB 버퍼는 지원하지 않습니다.",0,20,230,640,83,0);
         control(dlg,L"STATIC",status.c_str(),0,20,322,640,42,VIDEO_STATE);
         control(dlg,L"BUTTON",L"적용",WS_TABSTOP|BS_DEFPUSHBUTTON,440,382,105,34,VIDEO_APPLY);
         control(dlg,L"BUTTON",L"닫기",WS_TABSTOP|BS_PUSHBUTTON,555,382,105,34,VIDEO_CLOSE);
@@ -630,12 +849,19 @@ static LRESULT CALLBACK videoProc(HWND dlg,UINT msg,WPARAM wp,LPARAM lp) {
     if(msg==WM_COMMAND){
         int id=LOWORD(wp);
         if(id==VIDEO_PRESET&&HIWORD(wp)==CBN_SELCHANGE){selectBuiltin(dlg);return 0;}
+        if(id==VIDEO_PARAMETERS){
+            wchar_t selectedFile[32768]={0};GetDlgItemTextW(dlg,VIDEO_PATH,selectedFile,32767);
+            if(_wcsicmp(selectedFile,presetPath.c_str())!=0)
+                MessageBoxW(dlg,L"선택한 셰이더를 먼저 적용한 뒤 세부 설정을 열어 주세요.",L"셰이더 세부 설정",MB_OK|MB_ICONINFORMATION);
+            else showShaderParameters(dlg);
+            return 0;
+        }
         if(id==VIDEO_BROWSE){
             wchar_t file[32768]={0};GetDlgItemTextW(dlg,VIDEO_PATH,file,32767);
             OPENFILENAMEW ofn;ZeroMemory(&ofn,sizeof(ofn));ofn.lStructSize=sizeof(ofn);ofn.hwndOwner=dlg;
             ofn.lpstrFilter=L"GLSL 셰이더/프리셋 (*.glsl;*.glslp)\0*.glsl;*.glslp\0모든 파일\0*.*\0\0";
             ofn.lpstrFile=file;ofn.nMaxFile=32767;ofn.Flags=OFN_FILEMUSTEXIST|OFN_PATHMUSTEXIST|OFN_NOCHANGEDIR;
-            if(GetOpenFileNameW(&ofn)){SetDlgItemTextW(dlg,VIDEO_PATH,file);SendDlgItemMessageW(dlg,VIDEO_PRESET,CB_SETCURSEL,7,0);}return 0;
+            if(GetOpenFileNameW(&ofn)){SetDlgItemTextW(dlg,VIDEO_PATH,file);SendDlgItemMessageW(dlg,VIDEO_PRESET,CB_SETCURSEL,builtinCount,0);}return 0;
         }
         if(id==VIDEO_APPLY){
             bool gdi=SendDlgItemMessageW(dlg,VIDEO_GDI,BM_GETCHECK,0,0)==BST_CHECKED;

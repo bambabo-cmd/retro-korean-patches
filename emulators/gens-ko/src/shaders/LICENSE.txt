@@ -7,3 +7,8 @@ Its original license header is preserved: GNU GPL version 2 or any later version
 Source: https://github.com/libretro/glsl-shaders/blob/master/crt/shaders/crt-pi.glsl
 The shader source is unmodified. The packaged preset changes its relative
 path to upstream/crt-pi.glsl; this packaging change was made on 2026-11-20.
+
+real-crt-phosphor/ contains a dedicated GLSL port of Real CRT Phosphor v1.4.3
+by gunkun. It retains the author's custom non-commercial terms. Those files
+are NOT relicensed under the GPL notice above. See that directory's original
+LICENSE.txt and LICENSE_KR.txt and its provenance and port notes.

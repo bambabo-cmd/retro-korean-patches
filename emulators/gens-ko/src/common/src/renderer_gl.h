@@ -16,6 +16,10 @@ void Renderer_SetOverlayUtf8(const char *text, int duration_ms);
 void Renderer_ShowSettings(HWND parent);
 int Renderer_LoadPreset(const wchar_t *path, HWND error_parent);
 const wchar_t *Renderer_Status(void);
+/* Report only the active, compiled rendering pipeline. */
+int Renderer_ActivePassCount(void);
+int Renderer_ParameterCount(void);
+int Renderer_FeedbackPass(void);
 
 /* Call between BeginPaint/EndPaint; no default background erasure is needed.
    WM_ERASEBKGND should return 1. WM_SIZE should call Renderer_Resize.

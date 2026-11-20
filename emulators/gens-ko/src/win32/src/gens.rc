@@ -28,8 +28,8 @@ LANGUAGE LANG_KOREAN, SUBLANG_DEFAULT
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,14,2,0
- PRODUCTVERSION 2,14,2,0
+ FILEVERSION 2,14,3,0
+ PRODUCTVERSION 2,14,3,0
  FILEFLAGSMASK 0x37L
 #ifdef _DEBUG
  FILEFLAGS 0x21L
@@ -46,13 +46,13 @@ BEGIN
         BEGIN
             VALUE "Comments", "Unofficial Korean Windows modernization, 2026-11-20; based on Gens 2.14"
             VALUE "FileDescription", "Gens KO"
-            VALUE "FileVersion", "2.14 KO r2"
+            VALUE "FileVersion", "2.14 KO r3"
             VALUE "InternalName", "Gens KO"
             VALUE "LegalCopyright", "Copyright 1999-2006 Stéphane Dallongeville"
             VALUE "LegalTrademarks", "Gens"
             VALUE "OriginalFilename", "Gens_KO.exe"
             VALUE "ProductName", "Gens KO"
-            VALUE "ProductVersion", "2.14 KO r2"
+            VALUE "ProductVersion", "2.14 KO r3"
             VALUE "SpecialBuild", "비공식 한글 수정판"
         END
     END
@@ -86,7 +86,7 @@ CAPTION "Gens KO 정보"
 FONT 9, "Malgun Gothic", 0, 0, 0x1
 BEGIN
     PUSHBUTTON      "확인",IDOK,97,125,50,14
-    CTEXT           "Gens KO 2.14 r2 시험판\n\n메가드라이브 / 메가 CD / 32X\n한글 UI · GLSL 셰이더 · 새 입력 설정\n\nWindows 실제 화면 검증 미완료",
+    CTEXT           "Gens KO 2.14 r3 시험판\n\n메가드라이브 / 메가 CD / 32X\n한글 UI · GLSL 셰이더 · 새 입력 설정\n\n게임별 실행 검증 진행 중",
                     IDC_STATIC,90,3,150,60
     CONTROL         142,IDC_STATIC,"Static",SS_BITMAP | WS_BORDER,0,0,87,60
     CTEXT           "(c) 1999/2006 by Stéphane Dallongeville\n\nGens 2.14 기반 비공식 한글 수정판\n라이선스 및 변경기록: 배포 폴더의 문서 참조\n",

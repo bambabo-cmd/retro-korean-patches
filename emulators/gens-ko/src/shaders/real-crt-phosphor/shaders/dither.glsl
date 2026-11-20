@@ -1,0 +1,47 @@
+#version 130
+// Gens KO dedicated GLSL port, 2026-11-20. Original equations and pass order retained.
+// This shader retains gunkun's custom terms; see ../LICENSE.txt and ../LICENSE_KR.txt.
+// Real CRT Phosphor v1.4.3 - AI-assisted (Claude / ChatGPT), by gunkun. Non-commercial use free. See LICENSE.txt
+// Pass 1: composite-style dither blending (static). 1-pixel alternating columns (A B A B) - the Mega Drive
+// "fake transparency" trick - are melted together the way a composite TV did, without any moving artifacts.
+uniform vec4 SourceSize;
+uniform vec4 KoOriginalSize;
+uniform vec4 KoOutputSize;
+uniform int FrameCount;
+#include "params.inc"
+#include "ubo.inc"
+#include "common.inc"
+#if defined(VERTEX)
+in vec4 VertexCoord;
+in vec2 TexCoord;
+out vec2 vTexCoord;
+void main() { gl_Position = MVPMatrix * VertexCoord; vTexCoord = TexCoord; }
+#elif defined(FRAGMENT)
+in vec2 vTexCoord;
+out vec4 FragColor;
+uniform sampler2D Source;
+float gk_d(vec3 a, vec3 b) { vec3 e = abs(a - b); return max(e.r, max(e.g, e.b)); }
+// is c0 part of a 1-pixel alternating pattern? (neighbours match each other, every second pixel matches c0)
+float gk_isdit(vec3 l2, vec3 l1, vec3 c0, vec3 r1, vec3 r2)
+{
+    float same = max(gk_d(l1, r1), max(gk_d(l2, c0), gk_d(r2, c0)));
+    float diff = gk_d(c0, 0.5 * (l1 + r1));
+    return (1.0 - smoothstep(0.03, 0.08, same)) * smoothstep(0.04, 0.10, diff);
+}
+void main()
+{
+    vec3 c0 = texture(Source, vTexCoord).rgb;
+    if (DITHER < 0.01) { FragColor = vec4(c0, 1.0); return; }
+    float N = gk_box(SourceSize.y);
+    vec2 s = vec2(N * SourceSize.z, 0.0);
+    vec3 l1 = texture(Source, vTexCoord - s).rgb,       r1 = texture(Source, vTexCoord + s).rgb;
+    vec3 l2 = texture(Source, vTexCoord - 2.0 * s).rgb, r2 = texture(Source, vTexCoord + 2.0 * s).rgb;
+    vec3 l3 = texture(Source, vTexCoord - 3.0 * s).rgb, r3 = texture(Source, vTexCoord + 3.0 * s).rgb;
+    float w = gk_isdit(l2, l1, c0, r1, r2);
+    // also melt the last column at the edge of a dithered area, so no hard stripe is left at its border
+    w = max(w, 0.5 * max(gk_isdit(l3, l2, l1, c0, r1), gk_isdit(l1, c0, r1, r2, r3)));
+    vec3 blend = 0.5 * c0 + 0.25 * (l1 + r1);
+    FragColor = vec4(mix(c0, blend, DITHER * w), 1.0);
+}
+
+#endif
