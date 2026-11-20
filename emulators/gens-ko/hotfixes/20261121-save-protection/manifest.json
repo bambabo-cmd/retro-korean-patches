@@ -27,8 +27,8 @@
   "contains_full_original_core": false,
   "files": {
     "README_KO.md": {
-      "bytes": 5774,
-      "sha256": "498b9c066e6d76a0deef330cd7ad7d51a34d4b451ae3c1a30f1fed9ea3b51303"
+      "bytes": 5812,
+      "sha256": "7fee1ba88e4ca14b15b19418a3da32977ba81e0d7b48a5509d0b9ad172ea23f4"
     },
     "apply_hotfix.py": {
       "bytes": 3790,
