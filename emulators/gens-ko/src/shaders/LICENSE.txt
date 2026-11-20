@@ -1,0 +1,9 @@
+Gens KO sample shaders (sharp.glsl, scanlines.glsl, crt.glsl) were created
+for this project on 2026-11-20. They are distributed under GNU GPL version 2.
+See the accompanying source distribution LICENSE.txt for the full license.
+
+upstream/crt-pi.glsl is crt-pi by davej, Copyright (C) 2015-2016 davej.
+Its original license header is preserved: GNU GPL version 2 or any later version.
+Source: https://github.com/libretro/glsl-shaders/blob/master/crt/shaders/crt-pi.glsl
+The shader source is unmodified. The packaged preset changes its relative
+path to upstream/crt-pi.glsl; this packaging change was made on 2026-11-20.

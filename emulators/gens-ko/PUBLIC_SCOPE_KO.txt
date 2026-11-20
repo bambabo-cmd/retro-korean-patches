@@ -1,0 +1,26 @@
+Gens KO 2.14 R2 신규 기능 모듈·설정 화면 공개 범위
+
+이 공개 묶음은 전체 에뮬레이터가 아닙니다.
+새로 작성한 입력·핫키·배속·되감기·출력 기능 모듈과 설정 UI 확인 도구의 소스,
+실제 Windows 설정 창을 캡처한 증거 및 게시판 설명을 제공합니다.
+
+Gens_KO_Settings_Probe.exe는 제품의 입력·핫키·셰이더 설정 코드를 실행하는
+구성 요소 검증 도구입니다. 게임을 실행하지 않으며, 스크린샷도 게임 실행
+성공이나 완성형 에뮬레이터의 호환성 검증을 뜻하지 않습니다.
+
+제외: Starscream CPU 코드·생성기·생성된 어셈블리·전체 Gens_KO.exe,
+Kaillera 구현, Microsoft Wave 샘플, mpglib, 게임 ROM과 외부 BIOS.
+
+이 묶음의 Gens 입력·프런트엔드와 Gens KO 신규 코드는 해당 GNU GPL 고지를
+유지합니다. CRT-Pi는 원문의 GPL v2 이상 고지와 출처를 유지합니다.
+원본 Gens의 GPL 전문과 사용한 런타임 고지는 licenses 폴더에 보존합니다.
+
+전체 수정본은 별도 문제입니다. 원본 Gens에는 GPL 고지와 함께 Starscream의
+원형 배포·비상업 조건이 남아 있으며, 변경된 코어에 적용되는 재허가나
+예외 허락은 확인하지 못했습니다. 무료 공개나 소스 동봉은 이 충돌을 해결하지
+않습니다. 따라서 이 공개 자료를 전체 수정 실행파일의 재배포 허가로 해석하면 안 됩니다.
+
+근거
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=533715
+Gens 2.14 원본 main68kgen.txt / sub68kgen.txt의 Terms of Use

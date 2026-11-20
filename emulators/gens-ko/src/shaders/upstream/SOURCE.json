@@ -1,0 +1,10 @@
+{
+  "file": "upstream/crt-pi.glsl",
+  "author": "davej",
+  "copyright": "Copyright (C) 2015-2016 davej",
+  "license": "GPL-2.0-or-later",
+  "source_url": "https://raw.githubusercontent.com/libretro/glsl-shaders/master/crt/shaders/crt-pi.glsl",
+  "retrieved_date": "2026-11-20",
+  "sha256": "50f114719db0d85ed1ac8c194ce52555f9d37bdc3c0eb9a3c97064696297bd84",
+  "shader_modifications": "None; preset relative path adapted for packaging."
+}

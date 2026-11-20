@@ -1,0 +1,8 @@
+# Gens KO sample preset. GPL-2.0.
+shaders = 1
+shader0 = "crt.glsl"
+filter_linear0 = true
+parameters = "KO_SCANLINE_STRENGTH;KO_MASK_STRENGTH;KO_CURVATURE"
+KO_SCANLINE_STRENGTH = 0.18
+KO_MASK_STRENGTH = 0.10
+KO_CURVATURE = 0.025

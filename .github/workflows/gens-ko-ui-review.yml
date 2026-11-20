@@ -1,0 +1,92 @@
+name: Gens KO 신규 모듈과 설정 화면
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'emulators/gens-ko/**'
+      - '.github/workflows/gens-ko-ui-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gens-ko-ui-review
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: 빌드 도구 설치
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 g++ g++-mingw-w64-i686 binutils-mingw-w64-i686 zlib1g-dev
+      - name: 입력 및 기록 논리 검사
+        working-directory: emulators/gens-ko
+        run: python3 tests/run_public_checks.py
+      - name: 실제 설정 UI 구성 요소 빌드
+        working-directory: emulators/gens-ko
+        run: python3 build_shader_probe.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gens-ko-settings-probe
+          path: |
+            emulators/gens-ko/build/shader_probe/Gens_KO_Settings_Probe.exe
+            emulators/gens-ko/build/shader_probe/build-record.json
+            emulators/gens-ko/build/shader_probe/LICENSE.txt
+            emulators/gens-ko/build/shader_probe/shaders/
+          if-no-files-found: error
+          retention-days: 7
+
+  capture:
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: gens-ko-settings-probe
+          path: probe
+      - name: 실제 설정창 캡처
+        shell: powershell
+        run: |
+          & emulators/gens-ko/tests/windows_smoke.ps1 -SettingsProbe -IncludeShaderSettings -ExeDirectory probe -OutputDirectory settings-proof
+          exit $LASTEXITCODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gens-ko-settings-proof
+          path: settings-proof/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-modules:
+    needs: [build, capture]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: gens-ko-settings-proof
+          path: settings-proof
+      - name: 신규 코드와 실제 설정 화면 묶기
+        run: python3 emulators/gens-ko/package_public.py
+      - name: 신규 기능 모듈 시험 공개
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag='gens-ko-2.14-r2-modules'
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo 'This immutable version already exists; no files are replaced.'
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --prerelease --title 'Gens KO 2.14 R2 — 신규 모듈·설정 화면' --notes-file emulators/gens-ko/RELEASE_NOTES_KO.txt release-assets/*
+          fi
