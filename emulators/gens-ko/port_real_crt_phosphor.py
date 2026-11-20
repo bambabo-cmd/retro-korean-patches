@@ -91,7 +91,8 @@ def verify_sources(source,archive=None):
         with zipfile.ZipFile(archive) as z:
             entries={n[len('real-crt-phosphor/'):]:sha(z.read(n)) for n in z.namelist() if not n.endswith('/')}
         if entries!=PINNED_FILES:raise ValueError('Archive members differ from the pinned source tree')
-    return actual
+    # Filesystem/ZIP extraction order must not affect SOURCE.json bytes.
+    return dict(sorted(actual.items()))
 
 def declarations(body):
     fields=[]
