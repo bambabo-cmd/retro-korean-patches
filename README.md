@@ -44,5 +44,7 @@
 
 ## 에뮬레이터 개선 작업
 
-- **[Gens KO 2.14 R3 신규 기능 모듈·셰이더](emulators/gens-ko/README.md)** — 한글 UI, 키보드·패드 일괄 설정, FF·REW·슬로우모션, 홀드·토글 및 Real CRT Phosphor v1.4.3 셰이더 개선 작업입니다.
-- 공개 범위는 신규 코드와 설정 UI 구성 요소 자료입니다. 원본 Starscream 코어와 전체 에뮬레이터 EXE는 포함하지 않으며, 전체 수정본의 재배포 약관 문제를 해결한 것으로 표시하지 않습니다.
+- **[Gens KO 2.14 R6 시험 배포](https://github.com/bambabo-cmd/retro-korean-patches/releases/tag/gens-ko-2.14-r6-20261123-01)** — RetroArch GLSL·Slang 셰이더, CRT Mattias, 하위 폴더 검색, 매개변수 및 다중 패스를 지원합니다. R5의 메가 CD·BIOS 자동 검색 기능을 유지합니다.
+- **[Windows 실행 ZIP](https://github.com/bambabo-cmd/retro-korean-patches/releases/download/gens-ko-2.14-r6-20261123-01/Gens_KO_R6_20261123_01_Windows.zip)** · **[전체 소스 ZIP](https://github.com/bambabo-cmd/retro-korean-patches/releases/download/gens-ko-2.14-r6-20261123-01/Gens_KO_R6_20261123_01_Source.zip)** — 설치법, 지원 범위, 검증 결과와 SHA-256은 릴리스 설명에 있습니다.
+- Windows ZIP 전체를 풀고 `Gens_KO.exe`를 실행합니다. 동봉한 `librashader.dll`과 `shaders` 폴더도 함께 두세요. Cg와 HDR 최종 출력은 지원하지 않습니다. Windows GUI·WGL 직접 실행 여부를 포함한 검증 범위를 릴리스에 명시했습니다.
+- 과거 작업 기록: **[Gens KO 2.14 R3 신규 기능 모듈·셰이더](emulators/gens-ko/README.md)** · **[R3 Windows 시험 배포](https://github.com/bambabo-cmd/retro-korean-patches/releases/tag/gens-ko-2.14-r3-test-20261121-01)**

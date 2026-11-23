@@ -1,0 +1,415 @@
+{
+  "schema_version": 1,
+  "tag": "gens-ko-2.14-r6-20261123-01",
+  "title": "Gens KO 2.14 R6 — RetroArch GLSL·Slang 셰이더 지원",
+  "notes_path": "release-payloads/gens-ko/20261123_01/RELEASE_NOTES_KO.md",
+  "assets": [
+    {
+      "role": "windows",
+      "file_name": "Gens_KO_R6_20261123_01_Windows.zip",
+      "size": 10521040,
+      "sha256": "4a15cebdb0925a5bc8aaca1346d7ecfa729c2fe6260c535d47e8ef6da7648d4a",
+      "parts": [
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part000",
+          "size": 262144,
+          "sha256": "b25223439cc973c853910ed84c37441dd71b98fb8036b1f12a6db9bfc9cda059"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part001",
+          "size": 262144,
+          "sha256": "375a5410dfbfaf74fb8f2ed83f062638e9277ed0726c8a179ea381b0bd4e7738"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part002",
+          "size": 262144,
+          "sha256": "34713f553c2a2bb5b1bb4c8f1245502b9f3c4ea59caace4f96d987634cf3b7dc"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part003",
+          "size": 262144,
+          "sha256": "9369262691d70f4e9e47da4eea5d44f42f6ab323aea090aa5a341e1d34075e81"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part004",
+          "size": 262144,
+          "sha256": "78640e37d12c1fc7ec15714e11b1c5b523c2ec66b30add5df401b6b27051e1e5"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part005",
+          "size": 262144,
+          "sha256": "cec9dfe8f2de26987eaeee7813e4e288ea785924c54e571434da01ee0e09101b"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part006",
+          "size": 262144,
+          "sha256": "aec2c3609c7eb812e0bc75f8a3860da3fb8aa1c1ffc3fd65743f05a6cfcb68c1"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part007",
+          "size": 262144,
+          "sha256": "53f1c7b89757adb2d4e72d83a46dbe723c69de75b1e02e265fb6f4882d01a9dc"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part008",
+          "size": 262144,
+          "sha256": "2140ae466a55af7d4a226c79b34b6352e8de86a98caafd645d87a02e5ff056bd"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part009",
+          "size": 262144,
+          "sha256": "e129f2a4305d55e0806107557fca3765f225b3da1b8db22fe95f96f8f8c508b0"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part010",
+          "size": 262144,
+          "sha256": "0217fca022d23e917e1e18cf086cf9c3d27d37632437ddf10328625948754a1b"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part011",
+          "size": 262144,
+          "sha256": "af7f039de10660fa78ea70476fe2c961fb1440d4c2503e7f588117f03e52bb05"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part012",
+          "size": 262144,
+          "sha256": "a3bcd1bb9ba43580d1799d731d5891012c4d00f9591d221a6c10535e05a8d5c5"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part013",
+          "size": 262144,
+          "sha256": "70a1b0e319b14dcdaf25fc473f1cbafcb6859b9ae2e3297f9f15c181de175c17"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part014",
+          "size": 262144,
+          "sha256": "52221ace628a1b35782bcd57ccde3c699e46dd6575147853a80c93c1a2b137ca"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part015",
+          "size": 262144,
+          "sha256": "7a6aaaf98182bc0696faaccde847a2d1fb09ab8ca82121f16145266e10bdf3a4"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part016",
+          "size": 262144,
+          "sha256": "da03558e5926ef63a52f63bb913e59431a1865b80673510ab34249696895e336"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part017",
+          "size": 262144,
+          "sha256": "38741b0e33bf9182ac494cd9007ba63fc4930b8964beacff73b5cab03e4c5292"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part018",
+          "size": 262144,
+          "sha256": "5c37d4ef0cb4387d53790986ecf36220b5796f9ba8b2f9cc76d1e65a9cde46c3"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part019",
+          "size": 262144,
+          "sha256": "1299cc83659ad7322e705cb00443949c1846508a05bc85b916243663a77ace90"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part020",
+          "size": 262144,
+          "sha256": "477436a3c5779b218c8b570f4af242c940f4adfa28ded96053e544f0207eb043"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part021",
+          "size": 262144,
+          "sha256": "d6556d23618f22690910aa11c953fd0d9772d295bdf6e9c284b9d754e9be4c56"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part022",
+          "size": 262144,
+          "sha256": "74e47c33a76c4d4d3ad48a69bdacb26792911971cf5a9688668ebc3a6d079988"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part023",
+          "size": 262144,
+          "sha256": "f921b4beae2ee3e1d4217519d55781741fd0a7249d8d02afa8c7b6478cdf1e15"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part024",
+          "size": 262144,
+          "sha256": "4d3eaa58c964a8c538d60dd3a805bcb1297377a8ff36c40285521853d6725c51"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part025",
+          "size": 262144,
+          "sha256": "eac543b3286a483814d720ab34d909bb51d4a518a5d9fee9da2cbd9cc5fa1306"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part026",
+          "size": 262144,
+          "sha256": "ac3f39298208134904d188a9a2220b03f4bd20e0ac06cee3605965ce45872e9d"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part027",
+          "size": 262144,
+          "sha256": "afd3d5a641708ff45996916e95b175c5a085fee2022fc81a6dece2811769b977"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part028",
+          "size": 262144,
+          "sha256": "ff9aefaa3e98cd09b1268ee97b69be176f28c12899705189ae92eaaf6dd2483b"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part029",
+          "size": 262144,
+          "sha256": "fa63bc987383a58ff0c172c196c6b8939481103612fc9990f244803ab8e83b18"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part030",
+          "size": 262144,
+          "sha256": "c54ed730b9a24565edddacddcd442c166641ed528ba5efe7c2b9316235e4e976"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part031",
+          "size": 262144,
+          "sha256": "bcebe01e1dba6b549ded647bb0c010cb1437dca46e3a19f53e5d5825895814d4"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part032",
+          "size": 262144,
+          "sha256": "7336df0a1977e6ea5bb1f59ce1e4da693eee5af04d5ed44d372fc120c07f5d4d"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part033",
+          "size": 262144,
+          "sha256": "9f89d0583806dd6de3eaa7ae6c1190d9f7eccbe33eb93a27ba4cac868a9e2268"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part034",
+          "size": 262144,
+          "sha256": "c111745a9bcd19ad8094c0f64aa4fe2b9b19c94829124bcb5e65237feec261bd"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part035",
+          "size": 262144,
+          "sha256": "8d2679cd503b56e4fc3361dec0b3dcacded76246948780ef31f22137dc894982"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part036",
+          "size": 262144,
+          "sha256": "9629cdd9d204890941dc202b8cbc1e733e4ce318c70e1598a62b5750505d8268"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part037",
+          "size": 262144,
+          "sha256": "b937599580a0a847082b4cfe3878f332f5b9eb3e657e6e3c37ca346c70f0cc61"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part038",
+          "size": 262144,
+          "sha256": "356c472973e3100dbc058351c90c2cd4a2b6458593edf29376b26766df8c390f"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part039",
+          "size": 262144,
+          "sha256": "8dadcff0703ad7185fde609b120e1bc23cb9d35b5dc64ebd3c7dc2c3c66fcc38"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/windows/windows.part040",
+          "size": 35280,
+          "sha256": "e596001e291b2f2088df1ca2671151aa019115b59b300f9665cbb8b33911d45b"
+        }
+      ]
+    },
+    {
+      "role": "source",
+      "file_name": "Gens_KO_R6_20261123_01_Source.zip",
+      "size": 8244923,
+      "sha256": "6f13ba9592983df5e770254cc8d0a3dc15f2c6a124c2491e23cbbd526ed69012",
+      "parts": [
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part000",
+          "size": 262144,
+          "sha256": "44e802e37d2d2d791d5095a16285a3d489dcd838ba0ae035626a52955021eb6a"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part001",
+          "size": 262144,
+          "sha256": "ab9397560b409c377eb12b4b8107baf54403a31e31e0a172aacb4ff89ae01b1c"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part002",
+          "size": 262144,
+          "sha256": "8e6e79c787b75bd4c4690b11e1b340ff46d86c4aca7829f54ff9c1488e85f45a"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part003",
+          "size": 262144,
+          "sha256": "89880d9021ae24001058f305b38695363fda003794672efefdbedc3af2dab908"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part004",
+          "size": 262144,
+          "sha256": "a1fc6b4ab3f69903568e4f2d0d5868c2126385f3828a60bc2f3ccdd648022973"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part005",
+          "size": 262144,
+          "sha256": "5ad8a8fecce4697e04e7877d05ab577155fc8b65272b268bb8d22a9247b075e8"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part006",
+          "size": 262144,
+          "sha256": "c65a18323cfda0c5bad28893b632fab46066648184e069b26b61a332ffa52042"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part007",
+          "size": 262144,
+          "sha256": "71fdc5724b62bf956499eca03c1168b31461c5c820d23c3b1ca68d0b96d21dd9"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part008",
+          "size": 262144,
+          "sha256": "4e2a60c708029429fdee725d3955b881dcb2177776806636e38a229c3b010179"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part009",
+          "size": 262144,
+          "sha256": "387a9ac90d48e010b2c170f1ab996e732b6cd0d6c6b78900ebc6eba6b213b537"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part010",
+          "size": 262144,
+          "sha256": "8fda89bf626c9b3e500133c0dc89a84cfe0d7997578dfcb8c456507d1bff7e96"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part011",
+          "size": 262144,
+          "sha256": "56a74a4d13c2024206c0edf1776bba32bb654d3299fc064e584ec4f0dd41a477"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part012",
+          "size": 262144,
+          "sha256": "540275561caa91227d131686b01aec2e7d5b5bb97f0a83ebe906ba0a0641e3a7"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part013",
+          "size": 262144,
+          "sha256": "75278fb7ed04c531fe18a0585549038dab72e9ffa1753f1c60b33fa68383a583"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part014",
+          "size": 262144,
+          "sha256": "0e6df5142681151f48d22728bbee34c1c070018cae240e5e4efdad316d26a365"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part015",
+          "size": 262144,
+          "sha256": "0c0a501ddcceb73746aa7e9edc81b317a6c295266c481d630776dab0faf9d3e0"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part016",
+          "size": 262144,
+          "sha256": "060fcbe9c925e3c03b17870ec7350ae6606ae953ae2481842dfd6bcfd9540c8e"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part017",
+          "size": 262144,
+          "sha256": "174d317958e6a4fee0dcdffdf2331573de325245f34b286cbb4a20903a2b4bc0"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part018",
+          "size": 262144,
+          "sha256": "7e23fe7fce8854e783b88d16030eb5c30d5feb529a1580ce58101bdffa6c5103"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part019",
+          "size": 262144,
+          "sha256": "bae51a53199c11f8156b88bf386bd222a0815c85e72de65aba521b508680de43"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part020",
+          "size": 262144,
+          "sha256": "7282d06d6d580500841fcf548240fb0d55a9458a41f70ec0ce213f3844239d90"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part021",
+          "size": 262144,
+          "sha256": "edc1b4761ed3c37add24bbe86ce9064cc34bf245ac61f58b843f415913079393"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part022",
+          "size": 262144,
+          "sha256": "1c3151ffe2c4f2640904d0b9e2803f2136950e2cd83299d65dc42da97451c9be"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part023",
+          "size": 262144,
+          "sha256": "6c34083ac58e55de8f8305e4efa3aa14a133232f2d76726a583d27aa223e1e70"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part024",
+          "size": 262144,
+          "sha256": "5928180ded687b3be2f0b0058f628d4381cdf6cac0fb97c6e07d077ce6a95557"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part025",
+          "size": 262144,
+          "sha256": "00d4f7bb6f6c04da11257ca8ce6aafb81e3872c95c4986e056121a9ed790d921"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part026",
+          "size": 262144,
+          "sha256": "9e154317cd9e2e4e24f914ea2a30f1a8b2b6c3ab60a2a2181924302c3b65aa50"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part027",
+          "size": 262144,
+          "sha256": "a7a624611fadc4ad96ecba49a7f9d8949baabd7ae8faf9e91d0541b886cb6d65"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part028",
+          "size": 262144,
+          "sha256": "737c47fd1da470ba931460c26b3fe4dd3c7cbdd4213b53164b81f875981e6387"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part029",
+          "size": 262144,
+          "sha256": "3b2ecc16896bd4b08542c415f3ca48d59a9ab6ebbb7912ae31fe3ff5f7b61031"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part030",
+          "size": 262144,
+          "sha256": "297e66bbb53cc8c0475c5919f70fc1eff9830e736bced351a7f173205c8a1bf5"
+        },
+        {
+          "path": "release-payloads/gens-ko/20261123_01/source/source.part031",
+          "size": 118459,
+          "sha256": "5944a535e5c3fb4a8d1ad4a656fd99a65765c9f651e729d326d5f80aa1175da5"
+        }
+      ]
+    },
+    {
+      "role": "validation",
+      "file_name": "Gens_KO_R6_20261123_01_Validation_KO.txt",
+      "size": 1773,
+      "sha256": "5b6be9b54e9106652e46325d7605eb41b1c44c810d33461b38ff5723ccdd3a3e",
+      "path": "release-payloads/gens-ko/20261123_01/Gens_KO_R6_20261123_01_Validation_KO.txt"
+    },
+    {
+      "role": "checksums",
+      "file_name": "Gens_KO_R6_20261123_01_SHA256SUMS.txt",
+      "size": 308,
+      "sha256": "97e9431e2dd3405e267e9424edec0f85b7d0f1915080f67065aef0fd361f037f",
+      "path": "release-payloads/gens-ko/20261123_01/Gens_KO_R6_20261123_01_SHA256SUMS.txt"
+    }
+  ],
+  "binaries": [
+    {
+      "member": "Gens_KO/Gens_KO.exe",
+      "size": 3972096,
+      "sha256": "c14aade29ba3a72a1c5d4b6a460369f94c30f3ee14d789cd235ff4d7fb1d4ad4"
+    },
+    {
+      "member": "Gens_KO/librashader.dll",
+      "size": 22475840,
+      "sha256": "45732f59aa0b27bda785614eb4d90127c14e85f2fa39c3e904280cdc71fd7f8e"
+    }
+  ]
+}

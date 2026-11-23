@@ -1,0 +1,45 @@
+name: Gens KO R6 Windows 실행판 릴리즈
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/gens-ko-r6-release.yml'
+      - '.github/scripts/publish_gens_r6.py'
+      - 'release-payloads/gens-ko/20261123_01/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gens-ko-r6-release-20261123-01
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: R6 실행판·DLL·전체 소스 무결성 확인 및 릴리즈 게시
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          python3 .github/scripts/publish_gens_r6.py \
+            --manifest release-payloads/gens-ko/20261123_01/manifest.json \
+            --output "$RUNNER_TEMP/gens-ko-r6-release" \
+            --repository "$GITHUB_REPOSITORY" \
+            --commit "$GITHUB_SHA" \
+            --publish
+      - name: 게시 후 다운로드 검증 기록
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gens-ko-r6-release-verification
+          path: ${{ runner.temp }}/gens-ko-r6-release/release_verification.json
+          if-no-files-found: warn
+          retention-days: 30

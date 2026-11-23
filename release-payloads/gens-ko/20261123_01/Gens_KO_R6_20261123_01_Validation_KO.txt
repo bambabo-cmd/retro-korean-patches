@@ -1,0 +1,30 @@
+Gens KO 2.14 R6 검증 결과
+2026-11-23 / R6_20261123_01
+
+완료한 검증
+- GLSL 프리셋 파서: 2,361개 형식 검사와 기본 프리셋 43개.
+- GLSL 실제 OpenGL 출력: 22개 시나리오, 2,250개 확인 항목 통과.
+  첨부 CRT Mattias와 Real CRT Phosphor 14패스, LUT, 이전 프레임, 잔광 포함.
+- 셰이더 파일/폴더: 일반 123개, ASan/UBSan 123개 검사 통과.
+- GLSL 잔광 상태: 174개, Slang 출력 캐시: 183개 검사 통과.
+- Slang 실제 C API/OpenGL 출력: 9개 시나리오 통과.
+  원본 stock, include/매개변수, reference/한글 경로/다중 패스, LUT,
+  입력 이력과 출력 잔광의 동시 초기화, 원본 Real CRT Phosphor 14패스 포함.
+- EXE와 DLL의 Windows x86 PE32 형식, 필수 export, 외부 컴파일러 DLL 의존성 없음 확인.
+- Windows DLL과 네이티브 검사 라이브러리의 소스/로컬 패치 일치 확인.
+- R5의 CPU/CD/BIOS/입력/저장 코어 소스 보존 확인.
+
+실행 범위
+GPU 검사는 Linux Mesa EGL에서 수행했습니다. Windows Gens 창, WGL과 실제
+사용자 그래픽카드에서의 실행 검사는 이 환경에서 수행하지 못했습니다.
+Cg와 HDR 최종 출력은 지원하지 않으며 모든 RetroArch 프리셋을 검사한 것은 아닙니다.
+
+상세 근거: VALIDATION.json 및 verification/r6_shaders/*.json
+
+배포 압축본 검사
+실행 ZIP과 소스 ZIP 내부 파일·해시·필수 구성 검사 통과.
+실행 ZIP 439개 파일, 소스 ZIP 1544개 파일. 소스 명세의 모든 SHA-256 일치.
+
+다운로드 파일 SHA-256
+4a15cebdb0925a5bc8aaca1346d7ecfa729c2fe6260c535d47e8ef6da7648d4a  Gens_KO_R6_20261123_01_Windows.zip
+6f13ba9592983df5e770254cc8d0a3dc15f2c6a124c2491e23cbbd526ed69012  Gens_KO_R6_20261123_01_Source.zip
