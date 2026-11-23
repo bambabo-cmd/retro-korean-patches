@@ -1,0 +1,45 @@
+name: MesenCE KO R2 TEST Windows x64 릴리즈
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/mesen-ko-r2-release.yml'
+      - '.github/scripts/publish_mesen_r2.py'
+      - 'release-payloads/mesen-ko/20261123_01/manifest.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mesen-ko-r2-test-release-20261123-01
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: 원본 ZIP 검증 및 릴리즈 첨부·다운로드 대조 후 게시
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_PROMPT_DISABLED: '1'
+        run: |
+          python3 .github/scripts/publish_mesen_r2.py \
+            --manifest release-payloads/mesen-ko/20261123_01/manifest.json \
+            --output "$RUNNER_TEMP/mesen-ko-r2-release" \
+            --repository "$GITHUB_REPOSITORY" \
+            --commit "$GITHUB_SHA" \
+            --publish
+      - name: 게시 및 다운로드 검증 기록
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesen-ko-r2-release-verification
+          path: ${{ runner.temp }}/mesen-ko-r2-release/release_verification.json
+          if-no-files-found: warn
+          retention-days: 30
